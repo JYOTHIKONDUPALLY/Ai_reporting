@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Services;
+
+class SchemaDictionary
+{
+    public static function get(): string
+    {
+        return <<<EOT
+===========================
+Table: invoice_details
+Stores the header information of invoices.
+Relationships:
+- invoice_details.id → invoice_items_detail.invoice_id (one-to-many)
+- invoice_details.id → paymentDetails.invoice_id (one-to-many)
+
+Columns:
+- id: PK, Unique invoice ID
+- invoice_date: Date of invoice creation
+- customer_name: Full name of the customer
+- customer_id: Internal reference ID for the customer
+- customer_email: Email ID of the customer
+- is_member: Membership flag (Enum: 'no'=0, 'yes'=1)
+- company: Customer company (if applicable)
+- sales_clerk: Sales clerk handling the transaction
+- commission_clerk: Commissionable clerk
+- resource: Resource/staff/asset linked to invoice (trainer, therapist, etc.)
+- pos_terminal: POS terminal identifier (string)
+- pos_terminal_id: POS terminal numeric ID
+- retail_discount: Total retail discount applied
+- tax: Total tax applied
+- total_amount: Grand total of the invoice
+- franchise: Franchise name
+- franchise_id: Franchise unique ID
+- provider: Provider entity under franchise
+- provider_id: Provider unique ID
+- location: Location/branch/store name
+- location_id: Location unique ID
+- parent_invoice_id: Reference to original invoice (for refunds/linked invoices)
+- invoice_number: Human-readable invoice number
+- due_date: Due date for payment
+- status: Invoice status (Paid, Pending, Refunded, etc.)
+- notes: Additional notes or comments
+- created_at: Record creation timestamp
+- updated_at: Record last update timestamp
+
+===========================
+Table: invoice_items_detail
+Stores line-item details for each invoice (products, services, packages, etc.)
+Relationships:
+- invoice_items_detail.invoice_id → invoice_details.id (many items per invoice)
+
+Columns:
+- id: PK, Unique identifier for the invoice item row
+- invoice_id: FK → invoice_details.id
+- item_type: Type of item (product, service, package, membership, etc.)
+- item_type_id: Internal reference ID for the item type
+- category: High-level product/service category (e.g., Fitness, Supplements)
+- subcategory: Subcategory for further classification
+- brand: Brand name if applicable
+- department: Department responsible
+- SKU: Stock Keeping Unit code
+- UPC: Universal Product Code (barcode identifier)
+- item_id: Internal unique ID for the item
+- item_name: Human-readable name of the item
+- COGS: Cost of Goods Sold for the item
+- Commission: Commission percentage applied (decimal)
+- co_feat_tax: Additional feature/facility tax
+- guest_pass_discount: Discount applied due to guest pass
+- membership_discount: Discount applied due to membership
+- package_discount: Discount applied for package purchase
+- refund_amount: Refund issued against this line item
+- refund_co_feat_tax: Refund for feature tax
+- refund_tax: Tax refunded for this item
+- quantity: Number of units purchased
+- unit_price: Selling price per unit
+- discount_value: Direct discount value applied
+- discount_amount: Calculated discount amount in currency
+- tax_rate: Tax rate applied to this item
+- total_price: Final total after tax/discounts
+- created_at: Record creation timestamp
+- updated_at: Record last update timestamp
+
+===========================
+Table: paymentDetails
+Stores payment transaction details against invoices.
+Relationships:
+- paymentDetails.invoice_id → invoice_details.id (many payments per invoice)
+
+Columns:
+- id: PK, Unique payment record ID
+- franchise: Franchise name
+- franchise_id: Franchise unique ID
+- provider: Provider name
+- provider_id: Provider unique ID
+- location: Location/branch/store name
+- location_id: Location unique ID
+- invoice_id: FK → invoice_details.id
+- pos_terminal: POS terminal identifier (string)
+- pos_terminal_id: POS terminal numeric ID
+- payment_date: Date of payment
+- amount_paid: Amount paid by customer
+- payment_method: Method of payment (Cash, Card, Online, Wallet, etc.)
+- refund_amount: Refund issued for this payment
+- notes: Notes for this payment (transaction ID, remarks)
+- created_at: Record creation timestamp
+- updated_at: Record last update timestamp
+EOT;
+    }
+}
+

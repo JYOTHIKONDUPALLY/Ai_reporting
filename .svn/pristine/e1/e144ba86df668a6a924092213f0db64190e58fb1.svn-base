@@ -1,0 +1,189 @@
+{
+  "title": "Products & Retail",
+  "description": "Product sales performance, inventory insights, and retail analytics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "product_sales_summary",
+      "title": "Product Sales Summary",
+      "type": "metric",
+      "sql": "SELECT SUM(iid.quantity) as total_units_sold, SUM(iid.total_price) as total_revenue, COUNT(DISTINCT iid.item_name) as unique_products, COUNT(DISTINCT id.id) as total_transactions FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product'",
+      "config": {
+        "metrics": [
+          {"label": "Units Sold", "field": "total_units_sold", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Unique Products", "field": "unique_products", "format": "number"},
+          {"label": "Transactions", "field": "total_transactions", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "top_products",
+      "title": "Top Selling Products",
+      "type": "bar",
+      "sql": "SELECT iid.item_name, SUM(iid.quantity) as units_sold, SUM(iid.total_price) as revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' AND iid.SKU NOT IN ('') AND iid.category NOT IN ('') GROUP BY iid.item_name ORDER BY units_sold DESC LIMIT 15",
+      "config": {
+        "xAxis": "item_name",
+        "yAxis": "units_sold"
+      }
+    },
+    {
+      "id": "product_sales_trend",
+      "title": "Product Sales Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, SUM(iid.total_price) as revenue, SUM(iid.quantity) as units FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "revenue",
+        "secondaryAxis": "units"
+      }
+    },
+    {
+      "id": "sales_by_category",
+      "title": "Sales by Product Category",
+      "type": "pie",
+      "sql": "SELECT iid.category, SUM(iid.total_price) as total_sales, SUM(iid.quantity) as total_quantity FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY iid.category ORDER BY total_sales DESC",
+      "config": {
+        "labelField": "category",
+        "valueField": "total_sales"
+      }
+    },
+    {
+      "id": "product_performance_table",
+      "title": "Product Performance",
+      "type": "table",
+      "sql": "SELECT iid.item_name, iid.category, COUNT(DISTINCT id.id) as transaction_count, SUM(iid.quantity) as quantity_sold, SUM(iid.total_price) as total_sales FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY iid.item_name, iid.category ORDER BY total_sales DESC LIMIT 50",
+      "config": {
+        "columns": ["item_name", "category", "transaction_count", "quantity_sold", "total_sales"]
+      }
+    },
+    {
+      "id": "slow_movers",
+      "title": "Slow Moving Products",
+      "type": "table",
+      "sql": "SELECT pi.name AS product_name, pi.qoh AS quantity_on_hand, ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale FROM product_inventory AS pi LEFT JOIN invoice_items_detail AS iid ON iid.SKU = pi.sku LEFT JOIN invoice_details AS o ON o.id = iid.invoice_id GROUP BY pi.sku, pi.qoh, pi.name HAVING days_since_last_sale > 30 OR days_since_last_sale = -1 ORDER BY days_since_last_sale DESC LIMIT 20",
+      "config": {
+        "columns": ["product_name", "quantity_on_hand", "days_since_last_sale"]
+      }
+    },
+    {
+      "id":"Top_10_Products_Sold_YTD",
+      "title":"Top 10 Products Sold – YTD",
+      "type":"table",
+      "sql":"SELECT oi.item_name,SUM(oi.quantity) AS units_sold,SUM(oi.total_price) AS revenue FROM invoice_items_detail AS oi JOIN invoice_details AS o ON o.id = oi.invoice_id WHERE oi.item_type = 'product' AND o.created_at >= toStartOfYear(now()-INTERVAL 2 YEAR)  AND o.status = '1'GROUP BY oi.item_name ORDER BY units_sold DESC LIMIT 10;",
+      "config":{
+        "columns":["item_name","units_sold","revenue"]
+      }
+    },
+    {
+      "id":"Top_10_Categories_(for_Products)_YTD",
+      "title":"Top 10 Categories (for Products) – YTD",
+      "type":"table",
+      "sql":"SELECT oi.category AS category_name, SUM(oi.quantity) AS units_sold,SUM(oi.total_price) AS revenue FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o ON o.id = oi.invoice_id WHERE  oi.item_type = 'product' AND o.created_at >= toStartOfYear(now()-INTERVAL 2 YEAR ) AND nullIf(o.status, '') = '1'GROUP BY category_name ORDER BY units_sold DESC LIMIT 10;",
+      "config":{
+        "columns":["category_name","units_sold","revenue"]
+      }
+    },
+    {
+      "id":"Top_10_Products_Within_a_Selected_Category",
+      "title":"Top 10 Products Within a Selected Category",
+      "type":"table",
+      "sql":"SELECT oi.item_name AS product_name, SUM(oi.quantity) AS units_sold, SUM(oi.total_price) AS revenue FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o  ON o.id = oi.invoice_id WHERE  oi.item_type = 'product' AND nullIf (o.status, '') = '1' AND oi.category = 'Food & Lodging' GROUP BY product_name ORDER BY units_sold DESC LIMIT 10;",
+      "config":{
+        "columns":["product_name","units_sold","revenue"]
+      }
+    },
+    {
+      "id":"Top 10 Fastest Selling Products (units sold per day/week)",
+      "title":"Top 10 Fastest Selling Products (units sold per day/week)",
+      "type":"table",
+      "sql":"SELECT   oi.item_name AS product_name,   SUM(oi.quantity) AS total_units_sold, formatDateTime(MIN(o.created_at), '%d %b %Y') AS first_sale_date, formatDateTime(MAX(o.created_at), '%d %b %Y') AS last_sale_date, dateDiff('day', MIN(o.created_at), MAX(o.created_at)) + 1 AS active_days,   dateDiff('week', MIN(o.created_at), MAX(o.created_at)) + 1 AS active_weeks,   (SUM(oi.quantity) / (dateDiff('day', MIN(o.created_at), MAX(o.created_at)) + 1)) AS units_per_day,   (SUM(oi.quantity) / (dateDiff('week', MIN(o.created_at), MAX(o.created_at)) + 1)) AS units_per_week FROM invoice_items_detail AS oi JOIN invoice_details AS o   ON o.id = oi.invoice_id WHERE    oi.item_type = 'product'    AND nullIf(o.status, '') = '1' GROUP BY product_name ORDER BY units_per_day DESC LIMIT 10; ",
+      "config":{
+        "columns":["product_name","total_units_sold","first_sale_date","last_sale_date","active_days","active_weeks","units_per_day","units_per_week"]
+      }
+    },
+     {
+      "id":"Top 10 Slowest Moving Items (aging inventory)",
+      "title":"Top 10 Slowest Moving / Dead Inventory Items (aging inventory)",
+      "type":"table",
+      "sql":"SELECT pi.name AS product_name,    pi.qoh AS quantity_on_hand,    ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale FROM product_inventory AS pi LEFT JOIN invoice_items_detail AS iid     ON iid.SKU = pi.sku LEFT JOIN invoice_details AS o     ON o.id = iid.invoice_id GROUP BY pi.sku, pi.qoh, pi.name ORDER BY days_since_last_sale DESC LIMIT 10;",
+      "config":{
+        "columns":["product_name","quantity_on_hand","days_since_last_sale"]
+      }
+    },
+    {
+      "id":"Low_Stock_Alerts",
+      "title":"Low Stock Alerts",
+      "type":"table",
+      "sql":"SELECT    p.sku,    p.name,    p.category,    p.stock_quantity AS current_stock,    p.reorderLevel,    (p.stock_quantity - p.reorderLevel) AS stock_gap FROM product_inventory AS p WHERE     p.stock_quantity <= p.reorderLevel ORDER BY current_stock ASC;",
+      "config":{
+        "columns":["name","category","sku","current_stock","reorderLevel","stock_gap"]
+      }
+    },
+    {
+      "id":"Stockout_Risk_Items",
+      "title":"Stockout Risk Items",
+      "type":"table",
+      "sql":"WITH sales AS (    SELECT        oi.SKU as sku,        SUM(oi.quantity) AS units_sold_30d    FROM        invoice_items_detail oi    JOIN invoice_details o ON o.id = oi.invoice_id     WHERE oi.item_type = 'product'      AND o.status= '1'       AND o.created_at >= today() - 30     GROUP BY oi.SKU ) SELECT    p.sku,    p.name,    p.category,    p.stock_quantity,    ifNull(s.units_sold_30d / 30, 0) AS avg_daily_sales,    if(ifNull(s.units_sold_30d, 0) = 0,999999,p.stock_quantity / (s.units_sold_30d / 30)    ) AS days_left FROM product_inventory p LEFT JOIN sales s ON s.sku = p.sku WHERE     p.stock_quantity > 0     AND (p.stock_quantity / ifNull(s.units_sold_30d / 30, 0.0001)) < 14 ORDER BY days_left ASC;",
+      "config":{
+        "columns":["name","category","sku","stock_quantity","avg_daily_sales","days_left"]
+      }
+    },
+     {
+      "id":"Overstocked_Items",
+      "title":"Overstocked Items",
+      "type":"table",
+      "sql":"SELECT    id,    name,    category,    sub_category,    stock_quantity,   reorderLevel,    (stock_quantity - reorderLevel) AS overstock_amount FROM clickHouseInvoice.product_inventory WHERE stock_quantity > reorderLevel ORDER BY overstock_amount DESC LIMIT 100; ",
+      "config":{
+        "columns":["name","category","sku","stock_quantity","avg_daily_sales","days_left"]
+      }
+    },{
+      "id":"Top 10 Returned/Exchanged Items", 
+      "title":"Top 10 Returned/Exchanged Items",
+      "type":"table",
+      "sql":"SELECT    oi.item_name,    SUM(oi.refund_amount) AS total_refund_amount,    COUNT(*) AS total_refund_count,    SUM(oi.quantity) AS total_refund_units FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o     ON o.id = oi.invoice_id WHERE oi.refund_amount > 0 GROUP BY oi.item_name ORDER BY total_refund_amount DESC LIMIT 10;",
+      "config":{
+        "columns":["item_name","total_refund_amount","total_refund_count","total_refund_units"]
+      }
+    },
+    {
+      "id":"Average Order Value (AOV) Retail vs Online", 
+      "title":"Average Order Value (AOV) Retail vs Online",
+      "type":"table",
+      "sql":"SELECT    oi.item_name AS product_name, sumIf(o.total_amount, o.booking_type IN ('online', 'mobile_app')) / nullIf(countIf(o.booking_type IN ('online', 'mobile_app')), 0)  AS online_AOV,    sumIf(o.total_amount, o.booking_type IN ('phone_in', 'walk_in'))        / nullIf(countIf(o.booking_type IN ('phone_in', 'walk_in')), 0)        AS retail_AOV FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o     ON o.id = oi.invoice_id WHERE oi.item_type = 'product'  AND o.status = '1'GROUP BY product_name ORDER BY retail_AOV DESC;",
+      "config":{
+        "columns":["product_name","online_AOV","retail_AOV"]
+      }
+    }, {
+      "id":"Sales Mix: Firearms vs Accessories vs Ammo vs Classes vs Range (Percentages)", 
+      "title":"Sales Mix: Firearms vs Accessories vs Ammo vs Classes vs Range (Percentages)",
+      "type":"table",
+      "sql":"WITH category_sales AS (    SELECT        oi.category,        SUM(oi.total_price) AS revenue    FROM invoice_items_detail oi    INNER JOIN invoice_details o ON o.id = oi.invoice_id    WHERE o.status = '1'      AND oi.category  IN ('class', 'Gun & Ammo Cases', 'Accessories', 'Firearms', 'Range')    GROUP BY oi.category),total AS (    SELECT SUM(revenue) AS total_revenue FROM category_sales)SELECT    category,    revenue,    round(revenue / total_revenue * 100, 2) AS percentage FROM category_sales, total ORDER BY percentage DESC;",
+      "config":{
+        "columns":["category","revenue","percentage"]
+      }
+    },
+     {
+      "id":"Seasonal Trends: Month-over-Month comparison", 
+      "title":"Seasonal Trends: Month-over-Month comparison",
+      "type":"table",
+      "sql":"WITH monthly AS (SELECT toStartOfMonth(o.created_at) AS month_date,        SUM(oi.total_price) AS revenue,SUM(oi.quantity) AS units    FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id = oi.invoice_id WHERE o.status = '1' GROUP BY month_date),with_prev AS ( SELECT  month_date, formatDateTime(month_date, '%b %Y') AS month, revenue, units, lagInFrame(revenue) OVER (ORDER BY month) AS prev_revenue,  lagInFrame(units) OVER (ORDER BY month) AS prev_units   FROM monthly order by month_date) SELECT    month,    revenue,    prev_revenue,    IF(prev_revenue = 0 OR prev_revenue IS NULL,        NULL,        round((revenue - prev_revenue) / prev_revenue * 100, 2)    ) AS revenue_mom_percentage,    units,    prev_units,     IF(prev_units = 0 OR prev_units IS NULL,        NULL,        round((units - prev_units) / prev_units * 100, 2)    ) AS units_mom_percentage FROM with_prev ORDER BY month;",
+      "config":{
+        "columns":["month","revenue","revenue_mom_percentage","units","units_mom_percentage"]
+      }
+    },
+    {
+      "id":"Year-over-Year Sales Comparison", 
+      "title":"Year-over-Year Sales Comparison",
+      "type":"table",
+      "sql":"WITH monthly AS (    SELECT        toStartOfMonth(o.created_at) AS month,        SUM(o.total_amount) AS revenue    FROM invoice_details o    WHERE o.status = '1'    GROUP BY month),with_prev AS (    SELECT        month,        revenue,        lagInFrame(revenue) OVER (            ORDER BY month            ROWS BETWEEN 12 PRECEDING AND 12 PRECEDING        ) AS prev_year_revenue    FROM monthly)SELECT    revenue AS current_year_revenue,    prev_year_revenue,      IF(prev_year_revenue = 0 OR prev_year_revenue IS NULL,       NULL,        round( (revenue - prev_year_revenue) / prev_year_revenue * 100, 2)    ) AS yoy_percent_change,        formatDateTime(month, '%d %b %Y') AS month_label FROM with_prev ORDER BY month;",
+            "config":{
+        "columns":["current_year_revenue","prev_year_revenue","yoy_percent_change","month_label"]
+      }
+    }
+
+
+
+  ]
+}
+

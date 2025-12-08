@@ -1,0 +1,74 @@
+{
+  "title": "Employees",
+  "description": "Employee performance, sales attribution, and productivity metrics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "employee_summary",
+      "title": "Employee Performance Summary",
+      "type": "metric",
+      "sql": "SELECT             COUNT(DISTINCT resource) AS total_employees,            COUNT(DISTINCT id) AS total_transactions,            SUM(total_amount) AS total_sales          FROM invoice_details          WHERE resource IS NOT NULL            AND trim(resource) != ''            AND lower(trim(resource)) NOT IN ('n/a','na')",
+      "config": {
+        "metrics": [
+          {"label": "Active Employees", "field": "total_employees", "format": "number"},
+          {"label": "Total Transactions", "field": "total_transactions", "format": "number"},
+          {"label": "Total Sales", "field": "total_sales", "format": "currency"}
+        ]
+      }
+    },
+{
+  "id": "top_employees",
+  "title": "Top Performing Employees",
+  "type": "bar",
+  "sql": "    SELECT        trim(resource) AS employee_name,        COUNT(DISTINCT id) AS transaction_count,        SUM(total_amount) AS total_sales,        AVG(total_amount) AS avg_transaction    FROM invoice_details    WHERE resource IS NOT NULL      AND length(trim(resource)) > 0      AND lower(trim(resource)) NOT IN ('n/a', 'na')    GROUP BY employee_name    ORDER BY total_sales DESC    LIMIT 15  ",
+  "config": {
+    "xAxis": "employee_name",
+    "yAxis": "total_sales"
+  }
+}
+,    
+    {
+      "id": "employee_performance",
+      "title": "Employee Performance Details",
+      "type": "table",
+      "sql": "SELECT    if(lower(trim(resource)) IN ('n/a', 'na', ''), 'Others', trim(resource)) AS employee_name,    COUNT(DISTINCT id) AS transactions,    COUNT(DISTINCT customer_id) AS unique_customers,    SUM(total_amount) AS total_sales,    AVG(total_amount) AS avg_transaction,    MAX(invoice_date) AS last_sale FROM invoice_details WHERE resource IS NOT NULL  AND resource != '' GROUP BY employee_name ORDER BY if(employee_name = 'Others', 1, 0), total_sales DESC LIMIT 50;",
+      "config": {
+        "columns": ["employee_name", "transactions", "unique_customers", "total_sales", "avg_transaction", "last_sale"]
+      }
+    },
+    {
+      "id": "Top Sales Employees",
+      "title": "Top Sales Employees",
+      "type": "table",
+      "sql": "SELECT    resource AS employee_name,    SUM(total_amount) AS total_revenue,    COUNT(*) AS total_invoices,    AVG(total_amount) AS avg_invoice_value FROM invoice_details GROUP BY resource ORDER BY total_revenue DESC LIMIT 10;",
+      "config": {
+        "columns": ["employee_name", "total_revenue", "total_invoices", "avg_invoice_value"]
+      }
+    },{
+      "id": "Top Membership Sellers",
+      "title": "TTop Membership Sellers",
+      "type": "table",
+      "sql": "SELECT    d.resource AS employee_name,    COUNT(DISTINCT i.id) AS membership_transactions,    SUM(i.total_price) AS membership_sales,    SUM(i.quantity) AS total_memberships_sold,    AVG(i.total_price) AS avg_membership_sale,    MAX(d.invoice_date) AS last_sale_date FROM invoice_items_detail i left outer JOIN invoice_details d     ON i.invoice_id = d.id WHERE i.item_type = 'membership'  AND d.resource IS NOT NULL GROUP BY d.resource ORDER BY membership_sales DESC LIMIT 25;",
+      "config": {
+        "columns": ["employee_name", "membership_transactions", "membership_sales", "total_memberships_sold", "avg_membership_sale", "last_sale_date"]
+      }
+    },{
+      "id": "Top Class Instructors",
+      "title": "Top Class Instructors",
+      "type": "table",
+      "sql": "SELECT    resource_id,    resource_name,    COUNT(DISTINCT session_id) AS total_sessions_taught,    COUNT(*) AS total_enrollments,    SUM(net_amount) AS total_revenue,    AVG(net_amount) AS avg_revenue_per_enrollment FROM class_sessions WHERE resource_id > 0  AND resource_name != '' GROUP BY resource_id, resource_name ORDER BY total_revenue DESC LIMIT 25;",
+      "config": {
+        "columns": ["resource_name", "total_sessions_taught", "total_enrollments", "total_revenue", "avg_revenue_per_enrollment"]
+      }
+    },{
+      "id": "Average revenue per employee",
+      "title": "Average revenue per employee",
+      "type": "table",
+      "sql": "SELECT    d.resource AS employee_name,    COUNT(DISTINCT i.id) AS sales_count,    SUM(i.total_price) AS total_revenue,    AVG(i.total_price) AS avg_revenue FROM invoice_items_detail i INNER JOIN invoice_details d     ON i.invoice_id = d.id WHERE d.resource IS NOT NULL GROUP BY d.resource ORDER BY total_revenue DESC LIMIT 20;",
+      "config": {
+        "columns": ["employee_name", "sales_count", "total_revenue", "avg_revenue"]
+      }
+    }
+  ]
+}
+

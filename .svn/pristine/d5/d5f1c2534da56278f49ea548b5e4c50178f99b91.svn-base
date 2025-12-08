@@ -1,0 +1,161 @@
+{
+  "title": "Range Usage",
+  "description": "Gun range utilization, peak times, and service analytics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "range_usage_summary",
+      "title": "Range Usage Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT id.id) as total_sessions, COUNT(DISTINCT id.customer_id) as unique_customers, SUM(iid.total_price) as total_revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction'",
+      "config": {
+        "metrics": [
+          {"label": "Total Sessions", "field": "total_sessions", "format": "number"},
+          {"label": "Unique Customers", "field": "unique_customers", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"}
+        ]
+      }
+    },
+    {
+      "id": "busiest_months",
+      "title": "Busiest Months",
+      "type": "bar",
+      "sql": "SELECT formatDateTime(id.invoice_date, '%Y-%m') as month, countDistinct(id.customer_id) as customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY month ORDER BY customers DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "customers"
+      }
+    },
+    {
+      "id": "busiest_days",
+      "title": "Busiest Days of Week",
+      "type": "bar",
+      "sql": "SELECT formatDateTime(id.invoice_date, '%A') as day_of_week, countDistinct(id.customer_id) as customers, COUNT(DISTINCT id.id) as sessions FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY day_of_week ORDER BY customers DESC",
+      "config": {
+        "xAxis": "day_of_week",
+        "yAxis": "customers"
+      }
+    },
+    {
+      "id": "range_usage_trend",
+      "title": "Range Usage Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, COUNT(DISTINCT id.id) as sessions, COUNT(DISTINCT id.customer_id) as customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "sessions",
+        "secondaryAxis": "customers"
+      }
+    },
+    {
+      "id": "range_services",
+      "title": "Range Services Breakdown",
+      "type": "pie",
+      "sql": "SELECT iid.item_name, COUNT(DISTINCT id.id) as session_count, SUM(iid.total_price) as revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY iid.item_name ORDER BY revenue DESC",
+      "config": {
+        "labelField": "item_name",
+        "valueField": "revenue"
+      }
+    },
+    {
+      "id": "range_transactions",
+      "title": "Recent Range Transactions",
+      "type": "table",
+      "sql": "SELECT id.invoice_date, id.customer_name, iid.item_name, iid.total_price, id.franchise FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' ORDER BY id.invoice_date DESC LIMIT 50",
+      "config": {
+        "columns": ["invoice_date", "customer_name", "item_name", "total_price", "franchise"]
+      }
+    },{
+      "id": "Busiest Month (by reservations)",
+      "title": "Busiest Month (by reservations)",
+      "type": "table",
+      "sql": "WITH    toYear(now()) AS current_year,    current_year - 1 AS last_year,    current_year - 5 AS five_years_ago SELECT    monthOfYear AS month,        SUMIf(1, year = current_year) AS current_year_reservations,    SUMIf(membersCount, year = current_year) AS current_year_members,    SUMIf(nonMembersCount, year = current_year) AS current_year_nonmembers,    SUMIf(1, year = last_year) AS last_year_reservations,    SUMIf(membersCount, year = last_year) AS last_year_members,    SUMIf(nonMembersCount, year = last_year) AS last_year_nonmembers,    AVGIf(1, year BETWEEN five_years_ago AND last_year) AS five_year_avg_reservations,    AVGIf(membersCount, year BETWEEN five_years_ago AND last_year) AS five_year_avg_members,    AVGIf(nonMembersCount, year BETWEEN five_years_ago AND last_year) AS five_year_avg_nonmembers FROM Range_appointments   GROUP BY month ORDER BY month",
+      "config": {
+        "columns": ["month", "current_year_reservations", "last_year_reservations", "five_year_avg_reservations"]
+      }
+    },{
+      "id": "Month-over-Month Visit Comparison",
+      "title": "Month-over-Month Visit Comparison",
+      "type": "table",
+      "sql": "SELECT    formatDateTime(appointmentDate, ' %b %Y') as month,    SUM(membersCount + nonMembersCount) AS total_visits,    SUM(membersCount) AS member_visits,    SUM(nonMembersCount) AS nonmember_visits,    round(        (total_visits - lagInFrame(total_visits) OVER (ORDER BY month))        / nullIf(lagInFrame(total_visits) OVER (ORDER BY month), 0) * 100,         2    ) AS mom_change_percent FROM Range_appointments GROUP BY  month ORDER BY month;",
+      "config": {
+        "columns": ["month", "total_visits", "member_visits", "nonmember_visits", "mom_change_percent"]
+      }
+    },{
+      "id": "Peak vs Off-Peak Utilization Ratio",
+      "title": "Peak vs Off-Peak Utilization Ratio",
+      "type": "table",
+      "sql": "WITH    (t -> toHour(parseDateTimeBestEffortOrNull(t))) AS hour_fn SELECT    formatDateTime( toStartOfMonth(appointmentDate), ' %b %Y') AS month,      COUNTIf(hour_fn(slotTime) BETWEEN 13 AND 19) AS peak_visits,    COUNTIf(hour_fn(slotTime) NOT BETWEEN 13 AND 19) AS offpeak_visits,    round(        peak_visits / nullIf(offpeak_visits, 0),        2    ) AS peak_off_vs_peak_ratio FROM Range_appointments WHERE rangeTicketId > 0 GROUP BY month ORDER BY month;",
+      "config": {
+        "columns": ["month", "peak_visits", "offpeak_visits", "peak_off_vs_peak_ratio"]
+      }
+    },
+    {
+      "id": "Busiest Day of the Week",
+      "title": "Busiest Day of the Week",
+      "type": "table",
+      "sql": "SELECT    formatDateTime(appointmentDate, '%d %b %Y') AS dayName,       formatDateTime(appointmentDate, '%a') AS dayTypeName,    SUM(membersCount + nonMembersCount) AS totalVisits,    SUM(membersCount) AS memberCount,    SUM(nonMembersCount) AS nonMemberCount FROM Range_appointments WHERE rangeTicketId > 0 GROUP BY    dayName,    dayTypeName ORDER BY    totalVisits DESC;",
+      "config": {
+        "columns": ["dayName", "dayTypeName", "totalVisits", "memberCount", "nonMemberCount"]
+      }
+    },
+    {
+      "id": "Busiest Times of Day",
+      "title": "Busiest Times of Day",
+      "type": "table",
+      "sql": "WITH lane_stats AS (    SELECT         id, count(distinct lane) AS lanes_used    FROM Range_appointments    WHERE rangeTicketId > 0    GROUP BY id)SELECT    concat(        multiIf(            toDayOfWeek(ae.appointmentDate) = 1, 'Monday',            toDayOfWeek(ae.appointmentDate) = 2, 'Tuesday',            toDayOfWeek(ae.appointmentDate) = 3, 'Wednesday',            toDayOfWeek(ae.appointmentDate) = 4, 'Thursday',            toDayOfWeek(ae.appointmentDate) = 5, 'Friday',            toDayOfWeek(ae.appointmentDate) = 6, 'Saturday',            toDayOfWeek(ae.appointmentDate) = 7, 'Sunday',            'Unknown'        ),        ' (',        if(toDayOfWeek(ae.appointmentDate) IN (6, 7), 'Weekend', 'Weekday'),        ')'   ) AS dayWithType,        count(DISTINCT ae.id) AS totalAppointments,    sum(ae.membersCount + ae.nonMembersCount) AS totalVisits,    sum(ae.membersCount) AS memberVisits,    sum(ae.nonMembersCount) AS nonMemberVisits,    round((sum(ae.membersCount) * 100.0) / if(sum(ae.membersCount + ae.nonMembersCount) = 0, 1, sum(ae.membersCount + ae.nonMembersCount)), 2) AS memberPercentage,    round(avg(ae.membersCount + ae.nonMembersCount), 2) AS avgVisitsPerAppointment,    max(ae.membersCount + ae.nonMembersCount) AS peakVisitsInSingleAppointment,    sum(ls.lanes_used) AS totalLanesUsed,    round(avg(ls.lanes_used), 2) AS avgLanesPerAppointment FROM Range_appointments ae LEFT JOIN lane_stats ls ON ae.id = ls.id WHERE ae.rangeTicketId > 0 GROUP BY  ae.appointmentDate ,1 ORDER BY     if(toDayOfWeek(ae.appointmentDate) IN (6, 7), 1, 0) ASC,    toDayOfWeek(ae.appointmentDate) ASC;",
+          "config": {
+        "columns": ["dayWithType", "totalAppointments", "totalVisits", "memberVisits", "nonMemberVisits", "memberPercentage", "avgVisitsPerAppointment", "peakVisitsInSingleAppointment", "totalLanesUsed", "avgLanesPerAppointment"]
+      }
+    },{
+      "id": "Average lane occupancy rate",
+      "title": "Average lane occupancy rate",
+      "type": "table",
+      "sql": "WITH    toDateTime(concat(toString(appointmentDate), ' ', timeIn)) AS startTime,    toDateTime(concat(toString(appointmentDate), ' ', timeOut)) AS endTime SELECT    lane AS laneId,    resourceName AS laneName,     SUM(dateDiff('minute', startTime, endTime)) / 60 AS totalOccupiedHours,     SUM(dateDiff('minute', startTime, endTime)) / 60 / 12 AS occupancyRate FROM Range_appointments WHERE rangeTicketId > 0 GROUP BY     lane,    resourceName ORDER BY    occupancyRate DESC;",
+          "config": {
+        "columns": ["laneId", "laneName", "totalOccupiedHours", "occupancyRate"]
+      }
+    },{
+      "id": "Lane DownTime",
+      "title": "Lane DownTime",
+      "type": "table",
+      "sql": "WITH    toDateTime(concat(toString(appointmentDate), ' ', timeIn)) AS startTime,    toDateTime(concat(toString(appointmentDate), ' ', timeOut)) AS endTime SELECT    lane AS laneId,    resourceName AS laneName,        12 - (SUM(dateDiff('minute', startTime, endTime)) / 60) AS downtimeHours FROM Range_appointments WHERE rangeTicketId > 0 GROUP BY    lane,    resourceName ORDER BY    downtimeHours DESC;",
+          "config": {
+        "columns": ["laneId", "laneName", "downtimeHours"]
+      }
+    },{
+      "id": "Lane Overbooking / Bottleneck Alerts",
+      "title": "Lane Overbooking / Bottleneck Alerts",
+      "type": "table",
+      "sql": "WITH    toDateTime(concat(toString(a.appointmentDate), ' ', a.timeIn)) AS aStart,    toDateTime(concat(toString(a.appointmentDate), ' ', a.timeOut)) AS aEnd,    toDateTime(concat(toString(b.appointmentDate), ' ', b.timeIn)) AS bStart,    toDateTime(concat(toString(b.appointmentDate), ' ', b.timeOut)) AS bEnd SELECT    a.lane AS laneId,    a.resourceName AS laneName,    COUNT(*) AS overlappingSessions FROM Range_appointments a INNER JOIN Range_appointments b    ON a.lane = b.lane     AND a.rangeTicketId != b.rangeTicketId    AND aStart < bEnd     AND aEnd > bStart WHERE a.rangeTicketId > 0 GROUP BY    laneId,    laneName ORDER BY    overlappingSessions DESC;",
+          "config": {
+        "columns": ["laneId", "laneName", "overlappingSessions"]
+      }
+    },
+    {
+      "id": "Lane Revenue",
+      "title": "Lane Revenue",
+      "type": "table",
+      "sql": "SELECT    ae.lane AS laneId,    ae.resourceName AS laneName,    SUM(id.total_amount) AS laneRevenue FROM Range_appointments AS ae INNER JOIN invoice_details AS id    ON ae.invoiceId = CAST(id.id AS Int32) WHERE ae.rangeTicketId > 0  AND ae.invoiceId > 0 GROUP BY    ae.lane,    ae.resourceName ORDER BY laneRevenue DESC;",
+          "config": {
+        "columns": ["laneId", "laneName", "laneRevenue"]
+      }
+    },
+    {
+      "id": "Revenue from lane add-ons",
+      "title": "Revenue from lane add-ons",
+      "type": "table",
+      "sql": "SELECT    ae.lane AS laneId,    ae.resourceName AS laneName,    SUM(ae.addonPrice) AS addonRevenue FROM Range_appointments AS ae WHERE ae.rangeTicketId > 0  AND ae.addonId > 0 GROUP BY    ae.lane,    ae.resourceName ORDER BY addonRevenue DESC;",          "config": {
+        "columns": ["laneId", "laneName", "addonRevenue"]
+      }
+    },{
+      "id": "Lane package usage",
+      "title": "Lane package usage",
+      "type": "table",
+      "sql": "SELECT    ae.lane AS laneId,    ae.resourceName AS laneName,    ae.packageId,    ae.packageName,    COUNT(*) AS packageUsageCount FROM Range_appointments AS ae WHERE ae.rangeTicketId > 0  AND ae.packageId > 0 GROUP BY    ae.lane,    ae.resourceName,    ae.packageId,    ae.packageName ORDER BY packageUsageCount DESC;",          "config": {
+        "columns": ["laneId", "laneName", "packageId", "packageName", "packageUsageCount"]
+      }
+    }
+  ]
+}
+

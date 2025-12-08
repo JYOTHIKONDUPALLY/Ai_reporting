@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Dashboards - BizzAI Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .section-header {
+            background: #33a1df;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl grid place-items-center">
+                        <img src="https://d3fy0yt8gbsul8.cloudfront.net/assets/img/favicon.png" alt="Logo" class="w-6 h-6">
+                    </div>
+                    <a href="/dashboards" class="font-semibold">
+                        <h1>
+                            <span style="color:#33a1df; font-weight:bold;font-size:120%;">Bizz</span>
+                            <span style="color:#333; font-weight:bold;font-size:120%;">AI</span>
+                            <span style="color:#9dc8f0; font-weight:500; font-size:80%;"> Analytics</span>
+                        </h1>
+                    </a>
+                </div>
+                
+                <!-- Navigation Menu -->
+                <nav class="flex items-center gap-6">
+                    <a href="{{ route('reports.index') }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                        Reports
+                    </a>
+                    <a href="{{ route('dashboards.index') }}" 
+                       class="px-4 py-2 text-sm font-medium rounded-lg font-semibold" style="color: #33a1df; background-color: rgba(51, 161, 223, 0.1);">
+                        Dashboards
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" 
+                                class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            Logout
+                        </button>
+                    </form>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <div class="min-h-screen p-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Dashboards</h1>
+                <p class="text-gray-600">Select a dashboard to view analytics and insights</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($dashboards as $dashboard)
+                <a href="{{ route('dashboards.show', $dashboard['type']) }}" 
+                   class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 161, 223, 0.1);">
+                            <i data-lucide="layout-dashboard" class="w-6 h-6" style="color: #33a1df;"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900">{{ $dashboard['title'] }}</h3>
+                    </div>
+                    <p class="text-gray-600 text-sm">{{ $dashboard['description'] ?? 'View dashboard analytics' }}</p>
+                    <div class="mt-4 flex items-center text-sm font-medium" style="color: #33a1df;">
+                        View Dashboard
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </div>
+                </a>
+                @endforeach
+            </div>
+
+            @if(empty($dashboards))
+            <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                <i data-lucide="inbox" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Dashboards Available</h3>
+                <p class="text-gray-600">Dashboard configurations will appear here once they are created.</p>
+            </div>
+            @endif
+        </div>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+

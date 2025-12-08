@@ -1,0 +1,69 @@
+{
+  "title": "Customer Dashboard",
+  "description": "Customer insights, behavior analysis, and engagement metrics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "customer_summary",
+      "title": "Customer Overview",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT customer_id) as total_customers, COUNT(DISTINCT CASE WHEN is_member = 1 THEN customer_id END) as members, COUNT(DISTINCT CASE WHEN is_member = 0 THEN customer_id END) as non_members FROM invoice_details",
+      "config": {
+        "metrics": [
+          {"label": "Total Customers", "field": "total_customers", "format": "number"},
+          {"label": "Members", "field": "members", "format": "number"},
+          {"label": "Non-Members", "field": "non_members", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "top_customers",
+      "title": "Top Spending Customers",
+      "type": "bar",
+      "sql": "SELECT customer_name, SUM(total_amount) as total_spent, COUNT(DISTINCT id) as transaction_count FROM invoice_details GROUP BY customer_id, customer_name ORDER BY total_spent DESC LIMIT 15",
+      "config": {
+        "xAxis": "customer_name",
+        "yAxis": "total_spent"
+      }
+    },
+    {
+      "id": "customer_acquisition",
+      "title": "New Customer Acquisition",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(first_purchase_date), '%Y-%m') as month, COUNT(*) as new_customers FROM (SELECT customer_id, MIN(invoice_date) as first_purchase_date FROM invoice_details GROUP BY customer_id) GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "new_customers"
+      }
+    },
+    {
+      "id": "member_vs_nonmember",
+      "title": "Members vs Non-Members",
+      "type": "pie",
+      "sql": "SELECT CASE WHEN is_member = 1 THEN 'Members' ELSE 'Non-Members' END as customer_type, COUNT(DISTINCT customer_id) as count, SUM(total_amount) as total_spent FROM invoice_details GROUP BY is_member",
+      "config": {
+        "labelField": "customer_type",
+        "valueField": "count"
+      }
+    },
+    {
+      "id": "customer_list",
+      "title": "Customer List",
+      "type": "table",
+      "sql": "SELECT customer_name, CASE WHEN is_member = 1 THEN 'Yes' ELSE 'No' END as is_member, COUNT(DISTINCT id) as transaction_count, SUM(total_amount) as total_spent, MAX(invoice_date) as last_purchase FROM invoice_details GROUP BY customer_id, customer_name, is_member ORDER BY total_spent DESC LIMIT 100",
+      "config": {
+        "columns": ["customer_name", "is_member", "transaction_count", "total_spent", "last_purchase"]
+      }
+    },
+    {
+      "id": "repeat_customers",
+      "title": "Repeat Purchase Behavior",
+      "type": "table",
+      "sql": "SELECT customer_id, customer_name, COUNT(DISTINCT id) as purchase_count, SUM(total_amount) as total_spent, MIN(invoice_date) as first_purchase, MAX(invoice_date) as last_purchase FROM invoice_details GROUP BY customer_id, customer_name HAVING purchase_count > 1 ORDER BY purchase_count DESC LIMIT 50",
+      "config": {
+        "columns": ["customer_name", "purchase_count", "total_spent", "first_purchase", "last_purchase"]
+      }
+    }
+  ]
+}
+

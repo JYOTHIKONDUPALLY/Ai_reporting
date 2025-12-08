@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>88 Tactical Analytics</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: {
+            'soft': '0 10px 30px rgba(2, 6, 23, .06)'
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Flatpickr Date Range Picker -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+  <style>
+    :root {
+      --brand-primary: #A71930;
+      --brand-primary-rgb: 167, 25, 48;
+      --brand-primary-light: rgba(167, 25, 48, 0.1);
+    }
+    
+    .brand-primary {
+      color: var(--brand-primary);
+    }
+    
+    .bg-brand-primary {
+      background-color: var(--brand-primary);
+    }
+    
+    .bg-brand-primary-light {
+      background-color: var(--brand-primary-light);
+    }
+    
+    .border-brand-primary {
+      border-color: var(--brand-primary);
+    }
+    
+    .scroll-smooth::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .scroll-smooth::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, .15);
+      border-radius: 999px;
+    }
+
+    .section-header {
+      background: var(--brand-primary);
+      color: white;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      padding: 20px;
+    }
+    
+    /* Flatpickr date range picker styling */
+    .flatpickr-calendar {
+      font-family: inherit;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, .15);
+    }
+    
+    .flatpickr-day.selected,
+    .flatpickr-day.startRange,
+    .flatpickr-day.endRange {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+    }
+    
+    .flatpickr-day.inRange {
+      background: var(--brand-primary-light);
+      border-color: rgba(var(--brand-primary-rgb), 0.2);
+    }
+    
+    .flatpickr-day:hover {
+      background: rgba(var(--brand-primary-rgb), 0.2);
+    }
+    
+    .flatpickr-months .flatpickr-month {
+      color: #1e293b;
+    }
+    
+    .flatpickr-weekdays {
+      background: #f8fafc;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+
+          <div class="w-10 h-10 rounded-xl grid place-items-center">
+              <img alt="Logo" class="w-6 h-6" src="https://88tactical.com/wp-content/uploads/2022/07/88-tactical-logo-vert-236x300.png">
+          </div>
+          <a href="/dashboards" class="font-semibold">
+              <h1>
+                  <span style="color:#000; font-weight:bold;font-size:120%;">88 Tactical</span>
+                  <span style="color:#A71930; font-weight:bold;font-size:120%;">AI</span>
+                  <span style="color:#000; font-weight:500; font-size:80%;"> Analytics</span>
+              </h1>
+          </a>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="flex items-center gap-6">
+          <a href="{{ route('reports.index') }}" 
+             class="px-4 py-2 text-sm font-medium rounded-lg font-semibold brand-primary bg-brand-primary-light">
+            Reports
+          </a>
+          <a href="{{ route('dashboards.index') }}" 
+             class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+            Dashboards
+          </a>
+          <form method="POST" action="{{ route('logout') }}" class="inline">
+            @csrf
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+              Logout
+            </button>
+          </form>
+        </nav>
+      </div>
+    </div>
+  </header>
+  
+  <div class="max-w-7xl mx-auto h-screen grid grid-cols-12">
+    <!-- Sidebar -->
+    <aside class="col-span-12 md:col-span-3 xl:col-span-3 bg-white border-r border-slate-200 p-3 md:p-4 overflow-y-auto">
+
+      <!-- Search -->
+      <div class="mb-4">
+        <div class="flex items-center gap-2 rounded-xl ring-1 ring-slate-200 bg-slate-50 px-3 py-2">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+          <input id="report-search" placeholder="Find a report…" class="w-full bg-transparent outline-none text-sm" />
+        </div>
+      </div>
+
+      <nav id="report-nav" class="space-y-4 text-sm">
+        <!-- Dashboards -->
+        
+        <!-- Predefined Reports -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Payment Reports</div>
+          <ul class="space-y-1">
+            <li><a href="{{ route('reports.predefined', 'daily-sales') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Daily Sales</a></li>
+            <li><a href="{{ route('reports.predefined', 'top-items') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Top Items</a></li>
+            <li><a href="{{ route('reports.predefined', 'revenue-by-franchise') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Revenue by Franchise</a></li>
+            <li><a href="{{ route('reports.predefined', 'payments-by-method') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Payments by Method</a></li>
+            <li><a href="{{ route('reports.predefined', 'refunds') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Refunds</a></li>
+          </ul>
+        </div>
+        <!-- Custom Reports -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Custom Reports</div>
+          <ul class="space-y-1">
+            <li><button data-report="top_spenders" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top spending customers</button></li>
+            <li><button data-report="members" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top spending Members</button></li>
+            <li><button data-report="non_members" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top spending Non‑Members</button></li>
+            <li><button data-report="product_performance" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Product Performance</button></li>
+          </ul>
+        </div>
+
+        <!-- Products -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Products</div>
+          <ul class="space-y-1">
+            <li><button data-report="prd_top_sold" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top products sold (excluding Categories Range Services, Memberships)</button></li>
+            <li><button data-report="prd_turnover" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">High turnover products</button></li>
+            <li><button data-report="prd_least" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Least purchased products</button></li>
+            <li><button data-report="prd_slow_movers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Slow movers – longest on shelf</button></li>
+            <li><button data-report="cln_sale_report_dly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Daily</button></li>
+            <li><button data-report="cln_sale_report_wkly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Weekly</button></li>
+            <li><button data-report="cln_sale_report_mnthly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Monthly</button></li>
+            <li><button data-report="sale_by_category" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Product Category</button></li>
+            <li><button data-report="sale_by_subCategory" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Product Sub categories</button></li>
+            <li><button data-report="Trans_count_products" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Transaction Count for products</button></li>
+          </ul>
+        </div>
+        <!-- Memberships -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Memberships</div>
+          <ul class="space-y-1">
+            <li><button data-report="cln_sale_mem_report_dly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Daily</button></li>
+            <li><button data-report="cln_sale_mem_report_wkly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Weekly</button></li>
+            <li><button data-report="cln_sale_mem_report_mnthly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Monthly</button></li>
+            <li><button data-report="mem_sale_by_category" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Membership Category</button></li>
+            <li><button data-report="mem_Trans_count" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Transaction Count of Memberships</button></li>
+          </ul>
+        </div>
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Services</div>
+          <ul class="space-y-1">
+            <li><button data-report="svc_top_new" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top services for NEW customers</button></li>
+            <li><button data-report="svc_first_service_customers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Customers whose first item is a service</button></li>
+            <li><button data-report="range_busiest_month" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Gun Range – Busiest month</button></li>
+            <li><button data-report="range_busiest_dow" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Gun Range – Busiest day of week</button></li>
+          </ul>
+        </div>
+
+        <!-- Classes -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Classes</div>
+          <ul class="space-y-1">
+            <li><button data-report="cls_popular" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Most popular classes</button></li>
+            <li><button data-report="cls_new_customers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Classes bringing NEW customers</button></li>
+            <li><button data-report="cls_top_spenders" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top 100 class spenders</button></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="col-span-12 md:col-span-9 xl:col-span-9 p-4 md:p-6 overflow-y-auto">
+      <div class="max-w-7xl mx-auto">
+
+      <div class="text-white px-6 py-3 rounded-t-lg flex items-center justify-between flex-wrap gap-3 bg-brand-primary">
+        <div class="flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5"></i>
+          <span id="active-report-title" class="font-semibold">Select a report</span>
+        </div>
+        <div class="ml-auto flex items-center gap-2 flex-wrap">
+          <label class="text-sm font-medium flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+            <span>Date Range:</span>
+          </label>
+          <input id="dateRangePicker" type="text" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm text-gray-900 cursor-pointer" placeholder="Select date range" readonly style="min-width: 250px;" />
+          <button id="applyDateFilter" class="px-4 py-2 rounded-xl bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <i data-lucide="filter" class="w-4 h-4"></i>
+            Apply
+          </button>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl ring-1 ring-slate-200 shadow-soft hidden">
+        <div class="p-3 border-b border-slate-100 flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4 text-slate-500"></i>
+          <div class="text-sm font-medium">Generated SQL (ClickHouse)</div>
+          <div class="ml-auto flex items-center gap-2">
+            <button id="toggleSql" title="Toggle SQL View" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            <button id="copySql" title="Copy SQL" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="copy" class="w-4 h-4"></i></button>
+            <button id="runSql" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs">Run</button>
+          </div>
+        </div>
+        <div id="sqlContainer" class="hidden">
+          <pre id="sqlBox" class="p-4 overflow-auto text-sm bg-slate-50 rounded-b-2xl code"><span class="text-slate-400">-- SQL for the selected report will appear here</span></pre>
+        </div>
+      </div>
+
+
+      <!-- Tabs -->
+      <div class="bg-white">
+        <div class="flex gap-2 border-b border-gray-200 px-6 pt-4">
+          <button class="tab-btn active px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-brand-primary brand-primary" data-tab="table">
+            <i data-lucide="table" class="w-4 h-4"></i>
+            Table View
+          </button>
+          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="chart">
+            <i data-lucide="pie-chart" class="w-4 h-4"></i>
+            Chart View
+          </button>
+          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="export">
+            <i data-lucide="download" class="w-4 h-4 inline-block mr-2"></i>Export Data
+          </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="px-6 pb-6">
+          <!-- Table View -->
+          <div id="tab-table" class="tab-content pt-4">
+            <!-- Error Display -->
+            @if(isset($error) && !empty($error))
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <i data-lucide="alert-circle" class="w-5 h-5 text-red-500"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                  <h3 class="text-sm font-medium text-red-800">Error</h3>
+                  <div class="mt-2 text-sm text-red-700">
+                    <p>{{ $error }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            @endif
+            
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table id="dataTable" class="min-w-full text-sm">
+                  <thead id="tableHead"></thead>
+                  <tbody id="tableBody">
+                    @if(isset($error) && !empty($error))
+                    <tr>
+                      <td colspan="100" class="text-center text-red-600 py-8 font-medium">
+                        {{ $error }}
+                      </td>
+                    </tr>
+                    @else
+                    <tr>
+                      <td colspan="100" class="text-center text-slate-500 py-8">
+                        Select a report from the sidebar to view data
+                      </td>
+                    </tr>
+                    @endif
+                  </tbody>
+                </table>
+                <div id="paginationControls" class="mb-3"></div>
+              </div>
+            </div>
+            
+            <!-- Debug SQL Display -->
+            @if(isset($sql) && !empty($sql))
+            <div class="mt-4 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+              <details class="group">
+                <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                  <i data-lucide="code" class="w-3 h-3"></i>
+                  <span>View SQL (Debug)</span>
+                  <i data-lucide="chevron-down" class="w-3 h-3 group-open:rotate-180 transition-transform"></i>
+                </summary>
+                <div class="mt-2 p-3 bg-gray-50 rounded border border-gray-200">
+                  <pre class="text-xs text-gray-700 whitespace-pre-wrap break-words font-mono overflow-x-auto">{{ $sql }}</pre>
+                </div>
+              </details>
+            </div>
+            @endif
+            
+          </div>
+
+          <!-- Chart View -->
+          <div id="tab-chart" class="tab-content hidden pt-4">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="text-sm font-medium text-slate-700">Chart Visualization</div>
+                <div class="flex gap-2">
+                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="pie">
+                    <i data-lucide="pie-chart" class="w-4 h-4 inline-block mr-1"></i>
+                    Pie
+                  </button>
+                  <button class="chart-type-btn active px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200" data-chart-type="line">
+                    <i data-lucide="trending-up" class="w-4 h-4 inline-block mr-1"></i>
+                    Line
+                  </button>
+                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="bar">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline-block mr-1"></i>
+                    Bar
+                  </button>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <!-- Export section -->
+         <div id="tab-export" class="tab-content hidden pt-4">
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-gray-700 text-center">
+    
+    <!-- Download Icon and Label -->
+    <div class="flex flex-col items-center justify-center">
+      <i data-lucide="download" class="w-24 h-24 text-sky-500 mb-4"></i>
+      <button id="exportCSV" class="text-sky-600 text-base font-medium hover:underline">
+        Download CSV
+      </button>
+    </div>
+
+    <p class="mt-6 text-xs text-slate-400">
+      The export will include the currently displayed table data.
+    </p>
+  </div>
+</div>
+
+        </div>
+      </div>
+
+      <!-- AI Chat Section -->
+      <div class="mt-6 bg-white rounded-lg shadow p-6">
+  <div class="flex items-center gap-2 mb-4">
+    <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i>
+    <h3 class="text-base text-gray-700">Ask for a report in plain english</h3>
+  </div>
+
+  <form method="POST" action="{{ route('reports.askAi') }}" id="chatForm">
+    @csrf
+    <div class="flex gap-3 mb-4">
+      <input id="chatInput" name="question" type="text" placeholder="e.g., top 20 non-members by spend last quarter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">GET REPORT</button>
+    </div>
+    <input type="hidden" name="start_date" id="chatStartDate" value="{{ isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')) }}">
+    <input type="hidden" name="end_date" id="chatEndDate" value="{{ isset($endDate) ? $endDate : date('Y-m-d') }}">
+  </form>
+
+  <div class="text-sm text-gray-600 mb-3">Frequently asked reports:</div>
+  <div class="flex flex-wrap gap-2">
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Top 10 spending customers this month</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Show me monthly sales trends for 2025</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">High turnover products</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Give me basic report for invoice list for this month</button>
+  </div>
+</div>
+      </div>
+    </main>
+
+    <!-- Right Sidebar - Hidden for now -->
+    {{-- <aside class="col-span-12 xl:col-span-3 border-l border-slate-200 bg-white p-4 flex flex-col overflow-y-auto">
+      <div class="mb-6">
+        <h3 class="section-header">Most popular Queries</h3>
+        <div class="flex flex-wrap gap-2 mt-4 ">
+          <span data-query="Top products sold (with exclusions)" class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200">Top products sold (with exclusions)</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="High turnover products">High turnover products</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Least purchased products">Least purchased products</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Slow movers-longest on shelf">Slow movers-longest on shelf</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Daily">Clean Sales Report - Daily</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Weekly">Clean Sales Report - Weekly</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Monthly">Clean Sales Report - Monthly</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Sales By Product Category">Sales By Product Category</span>
+        </div>
+        <div class="flex justify-center mt-4">
+<button id="runPopularQuery" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Run query</button>
+        </div>
+        
+      </div>
+
+      <div>
+        <h3 class="section-header">My last 10 Queries</h3>
+        <div class="flex flex-wrap gap-2 mt-4">
+           <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Top products sold">Top products sold (with exclusions)</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="High turnover products">High turnover products</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Least purchased products">Least purchased products</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Slow movers-longest on shelf">Slow movers-longest on shelf</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Daily">Clean Sales Report - Daily</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Weekly">Clean Sales Report - Weekly</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200"data-query="Clean Sales Report - Monthlys">Clean Sales Report - Monthly</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200"data-query="Sales By Product Category">Sales By Product Category</span>
+        </div>
+         <div class="flex justify-center mt-4">
+    <button id="runLastQuery" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+      Run query
+    </button>
+  </div>
+      </div>
+    </aside> --}}
+  </div>
+
+  <script>
+    // Global variable for date range picker (accessible to all functions)
+    let dateRangePicker;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Flatpickr date range picker
+    const defaultStartDate = @json(isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')));
+    const defaultEndDate = @json(isset($endDate) ? $endDate : date('Y-m-d'));
+    
+    dateRangePicker = flatpickr("#dateRangePicker", {
+      mode: "range",
+      dateFormat: "Y-m-d",
+      defaultDate: [defaultStartDate, defaultEndDate],
+      maxDate: "today",
+      onChange: function(selectedDates, dateStr, instance) {
+        // Update hidden inputs in Ask AI form when dates change
+        if (selectedDates.length === 2) {
+          const chatStartDate = document.getElementById('chatStartDate');
+          const chatEndDate = document.getElementById('chatEndDate');
+          if (chatStartDate) chatStartDate.value = selectedDates[0].toISOString().split('T')[0];
+          if (chatEndDate) chatEndDate.value = selectedDates[1].toISOString().split('T')[0];
+        }
+      }
+    });
+    
+    // Check if this is a predefined report loaded from server
+    @if(isset($predefinedTitle))
+        const predefinedTitle = @json($predefinedTitle);
+        document.getElementById('active-report-title').textContent = predefinedTitle;
+        localStorage.setItem('activeReportTitle', predefinedTitle);
+    @elseif(isset($aiQuestionTitle))
+        // Check if this is an AI question response
+        const aiQuestionTitle = @json($aiQuestionTitle);
+        document.getElementById('active-report-title').textContent = aiQuestionTitle;
+        localStorage.setItem('activeReportTitle', aiQuestionTitle);
+    @else
+        const savedTitle = localStorage.getItem('activeReportTitle');
+        if (savedTitle) {
+            document.getElementById('active-report-title').textContent = savedTitle;
+        }
+    @endif
+    
+    // Check for errors first - don't override if error exists
+    @if(isset($error) && !empty($error))
+        const serverError = @json($error);
+        // Error is already displayed in the table body via Blade template
+        // Just ensure table head is cleared
+        document.getElementById('tableHead').innerHTML = '';
+    @else
+        // If there are results from predefined report or AI question, render them
+        @if(isset($results) && !empty($results))
+            const serverResults = @json($results);
+            if (serverResults && serverResults.length > 0) {
+                renderTable(serverResults);
+                @if(isset($sql))
+                    // Store SQL for export
+                    currentSql = @json($sql);
+                @endif
+            } else {
+                // No data available
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
+                document.getElementById('tableHead').innerHTML = '';
+            }
+        @endif
+    @endif
+    
+    // Initialize icons after page loads (for SQL debug section)
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Bind export button
+    const exportBtn = document.getElementById("exportCSV");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            exportTableToCSV("report_" + new Date().toISOString().split('T')[0] + ".csv");
+        });
+    }
+});
+    const TITLES = {
+      top_spenders: 'Top spending customers',
+      all_customers: 'All customers (within date range)',
+      members: 'Members only',
+      non_members: 'Non‑Members only',
+      non_member_savings: 'Top Non‑Members – potential membership savings',
+      repeat_behavior: 'Repeat purchases by item/category',
+      svc_top_new: 'Top services for NEW customers',
+      svc_first_service_customers: 'Customers whose first purchase was a service',
+      range_busiest_month: 'Gun Range – busiest month',
+      range_busiest_dow: 'Gun Range – busiest day of week (avg last 12 months)',
+      cls_popular: 'Most popular classes',
+      cls_new_customers: 'Classes bringing NEW customers',
+      cls_top_spenders: 'Top 100 class spenders',
+      prd_top_sold: 'Top products sold (with exclusions)',
+      prd_turnover: 'High turnover products',
+      prd_least: 'Least purchased products',
+      prd_slow_movers: 'Slow movers – longest on shelf',
+      cln_sale_report_dly: 'Clean Sales Report - Daily',
+      cln_sale_report_wkly: 'Clean Sales Report - weekly',
+      cln_sale_report_mnthly: 'Clean Sales Report - Monthly',
+      sale_by_category: 'Sales By Product Category',
+      sale_by_subCategory: 'Sales By Product Sub categories',
+      Trans_count_products: 'Transaction Count for products',
+      mem_sale_by_category: 'Sales By Membership Category',
+      mem_Trans_count: 'Transaction Count of Memberships',
+      cln_sale_mem_report_dly: 'Clean Sales Report - Daily',
+      cln_sale_mem_report_wkly: 'Clean Sales Report - Weekly',
+      cln_sale_mem_report_mnthly: 'Clean Sales Report - Monthly',
+      // Predefined reports
+      'daily-sales': 'Daily Sales',
+      'top-items': 'Top Items',
+      'revenue-by-franchise': 'Revenue by Franchise',
+      'payments-by-method': 'Payments by Method',
+      'refunds': 'Refunds'
+    };
+
+
+    const SQLS = {
+      top_spenders: ({
+        audience,
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+
+        return `/* Top ${N} ${audience?.replace('_', '-')} customers by spend */ 
+SELECT id.customer_name, SUM(iid.total_price) AS total_spent
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
+WHERE (lowerUTF8(iid.item_type) IN ('product', 'service', 'class', 'membership', 'package', 'rental', 'giftcard', 'appointment', 'subscription') 
+       OR lowerUTF8(iid.item_type) LIKE 'misc%' 
+       OR lowerUTF8(iid.item_type) LIKE 'Misc%')
+  ${dateFilter}
+GROUP BY id.customer_id, id.customer_name
+ORDER BY total_spent DESC
+LIMIT ${N};`
+      },
+      all_customers: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `WHERE invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `WHERE invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* All customers who purchased in range */
+SELECT distinct customer_name as CustomerName
+FROM invoice_details
+${dateFilter}`
+      },
+      members: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT distinct customer_name FROM invoice_details WHERE is_member=1 ${dateFilter}`
+      },
+      non_members: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT distinct customer_name FROM invoice_details WHERE is_member=0 ${dateFilter}`
+      },
+      non_member_savings: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        let dateFilter1 = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+          dateFilter1 = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+          dateFilter1 = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Potential savings for top non-members (assumes :discount_pct and :membership_price) */
+WITH ranked AS (
+  SELECT customer_id, sum(total_amount) AS spend
+  FROM invoice_details
+  WHERE is_member=0 ${dateFilter}
+  GROUP BY customer_id
+  ORDER BY spend DESC
+  LIMIT ${N}
+), eligible AS (
+  SELECT o.customer_name, o.customer_id, sum(oi.total_price) AS eligible_total
+  FROM invoice_details o
+  INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+  WHERE o.customer_id IN (SELECT customer_id FROM ranked)
+    ${dateFilter1}
+    AND (lowerUTF8(oi.item_type) IN ('product', 'service', 'class', 'membership', 'package', 'rental', 'giftcard', 'appointment', 'subscription') 
+         OR lowerUTF8(oi.item_type) LIKE 'misc%' 
+         OR lowerUTF8(oi.item_type) LIKE 'Misc%')
+  GROUP BY o.customer_id, o.customer_name
+)
+SELECT customer_name, customer_id,
+       eligible_total,
+       round(eligible_total * 0.1, 2) AS discount_value,
+       100.00 AS membership_cost,
+       round(eligible_total * 0.1 - 100.00, 2) AS net_savings
+FROM eligible
+ORDER BY net_savings DESC;`
+      },
+      product_performance: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+          dateFilter1 = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+          dateFilter1 = `AND invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Top ${N} products spend by their top spending customers*/
+WITH top_customers AS (
+    SELECT customer_id, customer_name, SUM(total_amount) AS total_spent
+    FROM invoice_details
+    ${dateFilter1 ? `WHERE ${dateFilter1.replace('AND ', '')}` : ''}
+    GROUP BY customer_id, customer_name
+    ORDER BY total_spent DESC
+    LIMIT ${N}
+),
+ranked_products AS (
+    SELECT
+        tc.customer_id,
+        tc.customer_name,
+        iid.item_name,
+        SUM(iid.total_price) AS total_spent,
+        ROW_NUMBER() OVER (
+            PARTITION BY tc.customer_id
+            ORDER BY SUM(iid.total_price) DESC
+        ) AS rn
+    FROM top_customers AS tc
+    INNER JOIN invoice_details AS id
+        ON tc.customer_id = id.customer_id
+    INNER JOIN invoice_items_detail AS iid
+        ON iid.invoice_id = id.id
+    WHERE iid.item_type = 'product'
+      ${dateFilter}
+    GROUP BY tc.customer_id, tc.customer_name, iid.item_name
+) SELECT tc.customer_name AS customer, item_name AS ITEM, sum(total_spent) AS total_spent 
+FROM ranked_products  
+WHERE rn <= ${N} 
+GROUP BY customer, ITEM, rn 
+ORDER BY total_spent DESC, rn ASC;`;
+      },
+
+      repeat_behavior: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `WHERE o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `WHERE o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Customers with >1 instance of same item/category in period */
+SELECT customer_id, item_type, anyHeavy(item_name) AS sample_item, count() AS occurrences
+FROM invoice_details o
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+${dateFilter}
+GROUP BY customer_id, item_type, item_name
+HAVING occurrences > 1
+ORDER BY occurrences DESC
+LIMIT ${N};`
+      },
+      svc_top_new: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND ft.first_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Top services that are first-ever purchase for customers */
+WITH first_dt AS (
+    SELECT 
+        customer_id, 
+        MIN(invoice_date) AS first_date 
+    FROM invoice_details 
+    GROUP BY customer_id
+)
+SELECT 
+    iid.item_name AS service_name, 
+    COUNT(DISTINCT ft.customer_id) AS new_customers
+FROM first_dt ft
+INNER JOIN invoice_details id 
+    ON id.customer_id = ft.customer_id 
+    AND id.invoice_date = ft.first_date
+INNER JOIN invoice_items_detail iid 
+    ON iid.invoice_id = id.id
+WHERE 
+    iid.item_type = 'service'
+   ${dateFilter} -- Filter first purchase date
+GROUP BY service_name
+ORDER BY new_customers DESC
+LIMIT ${N};`
+      },
+      svc_first_service_customers: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Customers whose first purchase was a service */
+WITH first_dt AS (
+  SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id
+)
+SELECT distinct o.customer_name as CustomerName, oi.item_name as Service, formatDateTime(ft.first_date, '%d %b %Y') as First_Purchase_Date
+FROM first_dt ft
+INNER JOIN invoice_details o ON o.customer_id=ft.customer_id 
+AND o.invoice_date=ft.first_date
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' ${dateFilter}`
+      },
+      range_busiest_month: ({
+        start,
+        end,
+        audience
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Range busiest month by distinct customers */
+SELECT formatDateTime(o.invoice_date, '%Y-%m') AS yyyymm, countDistinct(o.customer_id) AS customers
+FROM invoice_details o 
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
+  ${dateFilter}
+  ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
+GROUP BY yyyymm
+ORDER BY customers DESC
+LIMIT 1;`
+      },
+      range_busiest_dow: ({
+        audience,
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          // Get dates from 12 months ago
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+          startDate.setMonth(startDate.getMonth() - 12);
+          endDate.setMonth(endDate.getMonth() - 12);
+          const start12MonthsAgo = startDate.toISOString().split('T')[0];
+          const end12MonthsAgo = endDate.toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
+        } else {
+          const defaultEnd = new Date();
+          const defaultStart = new Date();
+          defaultStart.setMonth(defaultStart.getMonth() - 12);
+          const start12MonthsAgo = defaultStart.toISOString().split('T')[0];
+          const end12MonthsAgo = defaultEnd.toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
+        }
+        return `/* Busiest day of week (avg last 12 months) */
+SELECT toDayOfWeek(o.invoice_date) AS dow,
+    arrayElement(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], dow) AS day_name,
+    countDistinct(o.customer_id) / countDistinct(toDate(o.invoice_date)) AS avg_customers
+FROM invoice_details o 
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
+  ${dateFilter}
+  ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
+GROUP BY dow
+ORDER BY avg_customers DESC`
+      },
+      cls_popular: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Most popular classes */
+SELECT oi.item_name AS class_name, sum(oi.quantity) AS seats_sold, countDistinct(o.id) AS invoice_Count
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY class_name
+ORDER BY seats_sold DESC
+LIMIT ${N};`
+      },
+      cls_new_customers: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Classes that bring NEW customers */
+WITH first_dt AS (
+  SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id
+)
+SELECT oi.item_name AS class_name, count() AS new_customers
+FROM first_dt ft
+INNER JOIN invoice_details o ON o.customer_id=ft.customer_id AND o.invoice_date=ft.first_date
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY class_name
+ORDER BY new_customers DESC
+LIMIT ${N};`
+      },
+      cls_top_spenders: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Top 100 customers by class spend */
+SELECT o.customer_name, sum(oi.total_price) AS class_spend, count() AS class_lines
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY o.customer_name
+ORDER BY class_spend DESC
+LIMIT 100;`
+      },
+      prd_top_sold: ({
+        start,
+        end,
+        N,
+        audience
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Top products sold with sample exclusions (:exclude_skus, :exclude_categories) */
+SELECT oi.item_name, oi.category, sum(oi.quantity) AS units, sum(oi.total_price) AS revenue
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' 
+  ${dateFilter}
+  ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
+  AND oi.SKU NOT IN ('')
+  AND oi.category NOT IN ('Range Services', 'Memberships')
+GROUP BY oi.item_name, oi.category
+ORDER BY units DESC
+LIMIT ${N};`
+      },
+      prd_turnover: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* High turnover products (line count) */
+SELECT oi.item_name, oi.category, count() AS lines, sum(oi.quantity) AS units
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' ${dateFilter}
+GROUP BY oi.item_name, oi.category
+ORDER BY lines DESC
+LIMIT ${N};`
+      },
+      prd_least: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `/* Least purchased products by units */
+SELECT oi.item_name, sum(oi.quantity) AS units
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' 
+  ${dateFilter}
+GROUP BY oi.item_name
+ORDER BY units ASC
+LIMIT ${N};`
+      },
+      prd_slow_movers: ({
+        N
+      }) => `/* Slow movers (inventory-based) */
+SELECT 
+    pi.name AS product_name,
+    pi.qoh AS quantity_on_hand,
+    ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale
+FROM product_inventory AS pi
+LEFT JOIN invoice_items_detail AS iid
+    ON iid.SKU = pi.sku
+LEFT JOIN invoice_details AS o
+    ON o.id = iid.invoice_id
+GROUP BY pi.sku, pi.qoh, pi.name
+ORDER BY days_since_last_sale DESC
+LIMIT ${N};
+
+`,
+      cln_sale_report_dly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          // Default to last month
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT 
+    formatDateTime(id.invoice_date, '%d %b %Y') AS date,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+    ${dateFilter}
+GROUP BY id.invoice_date, iid.item_name
+ORDER BY id.invoice_date DESC, total_sales DESC`;
+      },
+      cln_sale_report_wkly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT 
+    formatDateTime(toStartOfWeek(id.invoice_date), '%d %b %Y') AS week_start,
+    formatDateTime(toStartOfWeek(id.invoice_date) + INTERVAL 6 DAY, '%d %b %Y') AS week_end,
+    iid.item_name,
+    SUM(iid.total_price) AS total_sales,
+    COUNT(DISTINCT id.id) AS invoice_count
+FROM invoice_details AS id
+INNER JOIN invoice_items_detail AS iid 
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+    ${dateFilter}
+GROUP BY 
+    toStartOfWeek(id.invoice_date),
+    iid.item_name
+ORDER BY 
+    toStartOfWeek(id.invoice_date) DESC, 
+    total_sales DESC`
+      },
+      cln_sale_report_mnthly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        // else{
+        //   dateFilter=` AND invoice_date BETWEEN toDate('2023-01-01') AND toDate('2024-12-31')`
+        // }
+        return `SELECT
+    formatDateTime(toStartOfMonth(id.invoice_date), '%b %Y') AS month,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+ ${dateFilter}
+GROUP BY toStartOfMonth(id.invoice_date), iid.item_name
+ORDER BY toStartOfMonth(id.invoice_date) DESC, total_sales DESC`
+      },
+      sale_by_category: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `
+  SELECT
+    iid.category,
+    iid.item_name,
+    COUNT(DISTINCT id.id) as invoice_count,
+    sum(iid.quantity) as qty_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+    ${dateFilter}
+GROUP BY iid.category, iid.item_name
+ORDER BY iid.category, total_sales DESC`;
+      },
+      sale_by_subCategory: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `
+  SELECT
+iid.item_name,
+    iid.subcategory,
+    COUNT(DISTINCT id.id) as invoice_count,
+    COUNT(iid.quantity ) as item_count,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+    ${dateFilter}
+GROUP BY  iid.item_name, iid.subcategory
+ORDER BY iid.subcategory, total_sales DESC`;
+      },
+      Trans_count_products: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `
+SELECT
+    iid.item_name,
+    COUNT(DISTINCT id.id) as transaction_count,
+    sum(iid.quantity) as Quantity_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+  ${dateFilter}
+GROUP BY iid.item_name
+ORDER BY transaction_count DESC`
+      },
+      cln_sale_mem_report_dly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT 
+    formatDateTime(id.invoice_date, '%d %b %Y') AS date,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+    ${dateFilter}
+GROUP BY id.invoice_date, iid.item_name
+ORDER BY id.invoice_date DESC, total_sales DESC`;
+      },
+      cln_sale_mem_report_wkly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT 
+    formatDateTime(toStartOfWeek(id.invoice_date), '%d %b %Y') AS week_start,
+    formatDateTime(toStartOfWeek(id.invoice_date) + INTERVAL 6 DAY, '%d %b %Y') AS week_end,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid 
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+    ${dateFilter}
+GROUP BY toStartOfWeek(id.invoice_date), iid.item_name
+ORDER BY toStartOfWeek(id.invoice_date) ASC, total_sales DESC`
+      },
+      cln_sale_mem_report_mnthly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = ` AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `SELECT
+    formatDateTime(toStartOfMonth(id.invoice_date), '%b %Y') AS month,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+ ${dateFilter}
+GROUP BY toStartOfMonth(id.invoice_date), iid.item_name
+ORDER BY toStartOfMonth(id.invoice_date) ASC, total_sales DESC`
+      },
+      mem_sale_by_category: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `
+  SELECT
+    iid.category,
+    TRIM(iid.item_name) as item_name,
+    COUNT(DISTINCT id.id) as invoice_count,
+    sum(iid.quantity) as qty_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+  ${dateFilter}
+GROUP BY iid.category, TRIM(iid.item_name)
+ORDER BY iid.category, total_sales DESC`
+      },
+      mem_Trans_count: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          const defaultEnd = new Date().toISOString().split('T')[0];
+          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+        }
+        return `
+SELECT
+   TRIM(iid.item_name) as item_name,
+    COUNT(DISTINCT id.id) as transaction_count,
+    sum(iid.quantity) as times_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+  ${dateFilter}
+GROUP BY TRIM(iid.item_name)
+ORDER BY transaction_count DESC`
+      }
+    };
+
+
+    lucide.createIcons();
+
+// Get data from server (passed from Laravel Blade)
+const serverData = @json($results ?? []);
+const serverReportKey = @json($reportKey ?? null);
+const serverSql = @json($sql ?? null);
+let currentData = serverData || [];
+let currentChart = null;
+let currentChartType = 'line';
+let currentReportKey = serverReportKey || null;
+let selectedQuery = '';
+
+// Pagination variables
+let currentPage = 1;
+let rowsPerPage = 10;
+let allTableData = [];
+
+// Format number helper
+function formatNumber(value, decimals = 0) {
+  if (typeof value !== 'number') return value;
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+// Format date helper - converts dates to "20 Nov 2025" format
+function formatDate(value) {
+  if (!value) return value;
+  
+  // Check if the value looks like a date
+  const dateStr = String(value).trim();
+  
+  // Try to parse as date
+  let date;
+  try {
+    // Handle various date formats
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+      // YYYY-MM-DD format
+      date = new Date(dateStr);
+    } else if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)) {
+      // YYYY-MM-DD HH:MM:SS format
+      date = new Date(dateStr);
+    } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+      // MM/DD/YYYY format
+      const parts = dateStr.split('/');
+      date = new Date(parts[2], parts[0] - 1, parts[1]);
+    } else {
+      // Try generic date parsing
+      date = new Date(dateStr);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return value; // Return original if not a valid date
+    }
+    
+    // Format as "20 Nov 2025"
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+  } catch (e) {
+    return value; // Return original if parsing fails
+  }
+}
+
+// Check if a column name suggests it's a date column
+// Remove prefixes from item names
+function removeItemPrefix(label) {
+  if (!label) return label;
+  const str = String(label).trim();
+  const prefixes = ['Product:', 'class:', 'Membership:', 'Service:', 'Appointment:'];
+  for (const prefix of prefixes) {
+    if (str.toLowerCase().startsWith(prefix.toLowerCase())) {
+      return str.substring(prefix.length).trim();
+    }
+  }
+  return str;
+}
+
+function isDateColumn(columnName) {
+  const dateKeywords = ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'created', 'updated', 'invoice_date', 'first_date', 'week_start', 'week_end'];
+  return dateKeywords.some(keyword => columnName.toLowerCase().includes(keyword.toLowerCase()));
+}
+
+// Check if a column name suggests it's an ID column
+function isIdColumn(columnName) {
+  if (!columnName) return false;
+  const lowerName = columnName.toLowerCase().trim();
+  // Check if column name ends with _id or is exactly 'id'
+  return lowerName === 'id' || lowerName.endsWith('_id');
+}
+
+// Render pagination controls
+function renderPagination(totalRows) {
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const paginationContainer = document.getElementById('paginationControls');
+  
+  if (!paginationContainer || totalPages <= 1) {
+    if (paginationContainer) paginationContainer.innerHTML = '';
+    return;
+  }
+
+  // Calculate display range
+  const startRow = (currentPage - 1) * rowsPerPage + 1;
+  const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+
+  // Main container
+  let paginationHTML = `
+    <div class=" p-3 mt-4 flex justify-between items-center text-sm text-gray-700 border-t pt-3">
+      
+      <!-- Previous Button -->
+      <button onclick="changePage(${currentPage - 1})"
+        class="px-3 py-1.5 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+        ${currentPage === 1 ? 'disabled' : ''}>
+        ← Previous
+      </button>
+
+      <!-- Page Info + Per Page Selector -->
+      <div class="flex items-center space-x-3">
+        <span>Page ${currentPage} of ${totalPages}</span>
+        <select id="perPageSelect" class="border rounded px-2 py-1 text-sm">
+          <option value="5" ${rowsPerPage === 5 ? 'selected' : ''}>5</option>
+          <option value="10" ${rowsPerPage === 10 ? 'selected' : ''}>10</option>
+          <option value="25" ${rowsPerPage === 25 ? 'selected' : ''}>25</option>
+          <option value="50" ${rowsPerPage === 50 ? 'selected' : ''}>50</option>
+           <option value="100" ${rowsPerPage === 100 ? 'selected' : ''}>100</option>
+        </select>
+        <span class="text-gray-500">rows per page</span>
+      </div>
+
+      <!-- Next Button -->
+      <button onclick="changePage(${currentPage + 1})"
+        class="px-3 py-1.5 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+        ${currentPage === totalPages ? 'disabled' : ''}>
+        Next →
+      </button>
+    </div>
+
+    <div class="text-xs text-gray-500 mt-2 text-center">
+      Showing ${startRow}-${endRow} of ${totalRows} rows
+    </div>
+  `;
+
+  paginationContainer.innerHTML = paginationHTML;
+
+  // Handle rows-per-page changes
+  document.getElementById('perPageSelect').addEventListener('change', e => {
+    const newPerPage = parseInt(e.target.value);
+    rowsPerPage = newPerPage;
+    currentPage = 1; // Reset to first page
+    renderTable(allTableData);
+  });
+}
+
+// Global function for changing pages
+window.changePage = function (page) {
+  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderTable(allTableData);
+};
+
+
+// Change page function (global scope for onclick)
+window.changePage = function(page) {
+  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+  if (page < 1 || page > totalPages) return;
+  
+  currentPage = page;
+  renderTable(allTableData);
+}
+
+// Render table with pagination and alternating row colors
+function renderTable(data) {
+  if (!data || data.length === 0) {
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
+    document.getElementById('tableHead').innerHTML = '';
+    if (document.getElementById('rowsCount')) {
+      document.getElementById('rowsCount').textContent = '';
+    }
+    const paginationContainer = document.getElementById('paginationControls');
+    if (paginationContainer) paginationContainer.innerHTML = '';
+    return;
+  }
+
+  // Store all data for pagination
+  allTableData = data;
+  
+  const headers = Object.keys(data[0]);
+
+  // Render table header
+  const headerHTML = headers.map(col =>
+    `<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300 bg-gray-700 text-white">${col.replace(/_/g, ' ')}</th>`
+  ).join('');
+  document.getElementById('tableHead').innerHTML = `<tr>${headerHTML}</tr>`;
+
+  // Calculate pagination
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+  const paginatedData = data.slice(startIndex, endIndex);
+
+  // Render table body with alternating row colors
+  const rowsHTML = paginatedData.map((row, index) => {
+    const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+    const cells = headers.map(key => {
+      let val = row[key];
+      
+      // Format dates
+      if (isDateColumn(key) || (val && typeof val === 'string' && (val.match(/^\d{4}-\d{2}-\d{2}/) || val.match(/^\d{2}\/\d{2}\/\d{4}/)))) {
+        val = formatDate(val);
+      } else if (typeof val === 'number') {
+        // Don't format ID columns with commas - show as plain number
+        if (isIdColumn(key)) {
+          val = val.toString(); // Convert to string without formatting
+        } else {
+          val = formatNumber(val, val % 1 ? 2 : 0);
+        }
+      } else if (typeof val === 'string') {
+        // Remove prefixes from item names
+        val = removeItemPrefix(val);
+      }
+      
+      return `<td class="px-4 py-3 text-sm border border-gray-300 text-gray-700">${val ?? ''}</td>`;
+    }).join('');
+    return `<tr class="hover:bg-gray-100 ${rowClass}">${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tableBody').innerHTML = rowsHTML;
+  
+  if (document.getElementById('rowsCount'))
+    document.getElementById('rowsCount').textContent = `${data.length} rows`;
+  
+  // Render pagination
+  renderPagination(data.length);
+}
+
+// Render chart - IMPROVED to handle AI queries
+function renderChart(data, reportKey, chartType = 'line') {
+  console.log("chartdata", data);
+  if (!data || data.length === 0) {
+    showChartMessage('No data available to create chart.');
+    return;
+  }
+
+  const canvas = document.getElementById('dataChart');
+  if (!canvas) {
+    console.warn('Chart canvas not found.');
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  if (currentChart) {
+    currentChart.destroy();
+  }
+
+  let labels = [];
+  let values = [];
+  let chartTitle = '';
+  let valueLabel = '';
+
+  // --- GENERIC CHART LOGIC for AI queries ---
+  const keys = Object.keys(data[0]);
+  
+  // Find the first string/text column for labels
+  const labelKey = keys.find(key => typeof data[0][key] === 'string');
+  
+  // Find the first numeric column for values
+  const valueKey = keys.find(key => typeof data[0][key] === 'number');
+  
+  if (!labelKey || !valueKey) {
+    showChartMessage('Could not find appropriate columns for chart (need at least one text and one numeric column).');
+    return;
+  }
+
+  labels = data.map(row => removeItemPrefix(row[labelKey]));
+  values = data.map(row => {
+    const val = row[valueKey];
+    return typeof val === 'number' ? val : 0;
+  });
+  valueLabel = valueKey.replace(/_/g, ' ');
+
+  // --- If all values are zero or invalid, also skip ---
+  if (values.every(v => v === 0)) {
+    showChartMessage('Chart cannot be created because all values are zero or invalid.');
+    return;
+  }
+
+  // --- Chart colors and config ---
+  const colors = ['#A71930', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#059669', '#0891b2'];
+
+  const chartConfig = {
+    type: chartType,
+    data: {
+      labels,
+      datasets: [{
+        label: valueLabel,
+        data: values,
+        backgroundColor: chartType === 'line' ? 'rgba(167, 25, 48, 0.1)' : colors,
+        borderColor: chartType === 'line' ? '#A71930' : '#ffffff',
+        borderWidth: 2,
+        fill: chartType === 'line',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: chartType === 'pie',
+          position: 'right'
+        },
+        title: {
+          display: true,
+          text: chartTitle,
+          font: { size: 16, weight: 'bold' },
+          padding: 20
+        }
+      },
+      scales: chartType !== 'pie' ? {
+        y: { beginAtZero: true }
+      } : undefined
+    }
+  };
+
+  currentChart = new Chart(ctx, chartConfig);
+  currentChartType = chartType;
+}
+
+// Helper function to show fallback message
+function showChartMessage(message) {
+  const container = document.getElementById('chartContainer') || document.body;
+  const msgElement = document.createElement('div');
+  msgElement.textContent = message;
+  msgElement.style.textAlign = 'center';
+  msgElement.style.color = '#6b7280';
+  msgElement.style.padding = '2rem';
+  msgElement.style.fontStyle = 'italic';
+  msgElement.style.fontSize = '1rem';
+
+  const canvas = document.getElementById('dataChart');
+  if (canvas && canvas.parentNode) {
+    canvas.parentNode.replaceChild(msgElement, canvas);
+  } else {
+    container.appendChild(msgElement);
+  }
+}
+
+
+// Load report - submit SQL to backend
+function loadReport(reportKey) {
+  currentReportKey = reportKey;
+  
+  // Store report key in sessionStorage to persist across page reload
+  sessionStorage.setItem('currentReportKey', reportKey);
+
+  const reportTitle = TITLES[reportKey] || 'Report';
+  document.getElementById('active-report-title').textContent = reportTitle;
+  localStorage.setItem('activeReportTitle', reportTitle);
+
+  // Get dates from date range picker
+  let start, end;
+  if (dateRangePicker && dateRangePicker.selectedDates && dateRangePicker.selectedDates.length === 2) {
+    const selectedDates = dateRangePicker.selectedDates;
+    start = selectedDates[0].toISOString().split('T')[0];
+    end = selectedDates[1].toISOString().split('T')[0];
+  } else {
+    // Fallback to default (last month)
+    const defaultEnd = new Date().toISOString().split('T')[0];
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    start = defaultStart;
+    end = defaultEnd;
+  }
+
+  // Generate SQL for this report
+  const audience = 'all';
+  const N = 100;
+  const fn = SQLS[reportKey];
+
+const AvoidAlert = ['refunds', 'payments-by-method', 'revenue-by-franchise', 'top-items', 'daily-sales'];
+
+          if (!fn && !AvoidAlert.includes(reportKey)) {
+            alert('SQL template not available for this report');
+            return;
+          }
+
+  const sql = fn({
+    audience,
+    N,
+    start,
+    end
+  });
+
+  // Submit form to backend to execute SQL
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/reports/run';
+
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]');
+  if (csrfToken) {
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = csrfToken.content;
+    form.appendChild(csrfInput);
+  }
+
+  const sqlInput = document.createElement('input');
+  sqlInput.type = 'hidden';
+  sqlInput.name = 'sql';
+  sqlInput.value = sql;
+  form.appendChild(sqlInput);
+
+  const reportKeyInput = document.createElement('input');
+  reportKeyInput.type = 'hidden';
+  reportKeyInput.name = 'report_key';
+  reportKeyInput.value = reportKey;
+  form.appendChild(reportKeyInput);
+
+  // Add date filters
+  const startDateInput = document.createElement('input');
+  startDateInput.type = 'hidden';
+  startDateInput.name = 'start_date';
+  startDateInput.value = start;
+  form.appendChild(startDateInput);
+
+  const endDateInput = document.createElement('input');
+  endDateInput.type = 'hidden';
+  endDateInput.name = 'end_date';
+  endDateInput.value = end;
+  form.appendChild(endDateInput);
+
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => hidePageLoader(), 10000);
+}
+
+// Search functionality
+document.getElementById('report-search').addEventListener('input', (e) => {
+  const searchTerm = e.target.value.toLowerCase().trim();
+
+  const sectionHeaders = document.querySelectorAll('.section-header');
+  const reportButtons = document.querySelectorAll('.rep-btn');
+
+  // 🔹 If search term is empty → show section headers again
+  if (searchTerm === '') {
+    sectionHeaders.forEach(el => el.style.display = '');
+  } else {
+    sectionHeaders.forEach(el => el.style.display = 'none');
+  }
+
+  // 🔹 Filter report buttons
+  reportButtons.forEach(btn => {
+    const text = btn.textContent.toLowerCase();
+    const listItem = btn.closest('li');
+
+    if (text.includes(searchTerm) || searchTerm === '') {
+      listItem.style.display = '';
+    } else {
+      listItem.style.display = 'none';
+    }
+  });
+});
+
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.classList.add('border-transparent', 'text-gray-600');
+      b.style.borderColor = 'transparent';
+      b.style.color = '#6b7280';
+    });
+
+    this.classList.remove('border-transparent', 'text-gray-600');
+    this.classList.add('active');
+    this.style.borderColor = '#A71930';
+    this.style.color = '#A71930';
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.add('hidden');
+    });
+
+    document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// Report buttons (only for buttons, not anchor links)
+document.querySelectorAll('.rep-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    // If it's an anchor tag, add date parameters and let it navigate
+    if (this.tagName === 'A') {
+      if (dateRangePicker && dateRangePicker.selectedDates && dateRangePicker.selectedDates.length === 2) {
+        const selectedDates = dateRangePicker.selectedDates;
+        const start = selectedDates[0].toISOString().split('T')[0];
+        const end = selectedDates[1].toISOString().split('T')[0];
+        const url = new URL(this.href, window.location.origin);
+        url.searchParams.set('start_date', start);
+        url.searchParams.set('end_date', end);
+        this.href = url.toString();
+      }
+      return; // Allow default link behavior
+    }
+    // Only prevent default for buttons
+    e.preventDefault();
+    if (this.dataset.report) {
+      loadReport(this.dataset.report);
+    }
+  });
+});
+
+// Date filter button - reload current report or predefined report with new dates
+document.getElementById('applyDateFilter')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  
+  if (!dateRangePicker || !dateRangePicker.selectedDates || dateRangePicker.selectedDates.length !== 2) {
+    alert('Please select a complete date range (start and end dates)');
+    return;
+  }
+  
+  const selectedDates = dateRangePicker.selectedDates;
+  const start = selectedDates[0].toISOString().split('T')[0];
+  const end = selectedDates[1].toISOString().split('T')[0];
+  
+  // Update hidden inputs in Ask AI form
+  const chatStartDate = document.getElementById('chatStartDate');
+  const chatEndDate = document.getElementById('chatEndDate');
+  
+  if (chatStartDate) chatStartDate.value = start;
+  if (chatEndDate) chatEndDate.value = end;
+  
+  // Check if we have a current report key
+  const currentReportKey = sessionStorage.getItem('currentReportKey');
+  const predefinedType = @json(isset($predefinedType) ? $predefinedType : null);
+  
+  if (currentReportKey && SQLS[currentReportKey]) {
+    // Reload the current custom report with new dates
+    loadReport(currentReportKey);
+  } else if (predefinedType) {
+    // Reload predefined report with new dates
+    window.location.href = `/reports/predefined/${predefinedType}?start_date=${start}&end_date=${end}`;
+  } else {
+    // No active report, just update the dates for future use
+    console.log('Date filter updated. Select a report to apply the filter.');
+  }
+});
+
+// Chart type switching
+document.querySelectorAll('.chart-type-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.chart-type-btn').forEach(b => {
+      b.classList.remove('active', 'bg-gray-200');
+      b.classList.add('bg-gray-100');
+    });
+
+    this.classList.add('active', 'bg-gray-200');
+    this.classList.remove('bg-gray-100');
+
+    if (currentData.length > 0) {
+      renderChart(currentData, currentReportKey, this.dataset.chartType);
+    }
+  });
+});
+
+// Query chip buttons - auto-fill and submit form
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    const query = this.textContent.trim();
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    
+    if (chatInput && chatForm) {
+      chatInput.value = query;
+      chatForm.submit();
+    }
+  });
+});
+
+// Popular query pills - FIXED
+let selectedPopularQuery = '';
+document.querySelectorAll('.popular-query-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.popular-query-pill').forEach(p => {
+      p.classList.remove('bg-gray-800', 'text-white');
+      p.classList.add('bg-gray-100', 'text-gray-700');
+    });
+
+    this.classList.remove('bg-gray-100', 'text-gray-700');
+    this.classList.add('bg-gray-800', 'text-white');
+    selectedPopularQuery = this.dataset.query;
+    
+    // Auto-fill the chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.value = selectedPopularQuery;
+    }
+  });
+});
+
+// Remove the runPopularQuery button listener if it exists
+const runPopularBtn = document.getElementById('runPopularQuery');
+if (runPopularBtn) {
+  runPopularBtn.addEventListener('click', function() {
+    if (!selectedPopularQuery) {
+      alert('Please select a query first');
+      return;
+    }
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    if (chatInput && chatForm) {
+      chatInput.value = selectedPopularQuery;
+      chatForm.submit();
+    }
+  });
+}
+
+// Last query pills - FIXED
+let selectedLastQuery = '';
+document.querySelectorAll('.last-query-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.last-query-pill').forEach(p => {
+      p.classList.remove('bg-gray-800', 'text-white');
+      p.classList.add('bg-gray-100', 'text-gray-700');
+    });
+
+    this.classList.remove('bg-gray-100', 'text-gray-700');
+    this.classList.add('bg-gray-800', 'text-white');
+    selectedLastQuery = this.dataset.query;
+    
+    // Auto-fill the chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.value = selectedLastQuery;
+    }
+  });
+});
+
+// Remove the runLastQuery button listener if it exists
+const runLastBtn = document.getElementById('runLastQuery');
+if (runLastBtn) {
+  runLastBtn.addEventListener('click', function() {
+    if (!selectedLastQuery) {
+      alert('Please select a query first');
+      return;
+    }
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    if (chatInput && chatForm) {
+      chatInput.value = selectedLastQuery;
+      chatForm.submit();
+    }
+  });
+}
+
+function showPageLoader() {
+
+  const loader = document.createElement('div');
+  loader.id = 'page-loader';
+  loader.innerHTML = `
+    <div style="
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #16a34a;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 1s linear infinite;
+      "></div>
+    </div>
+  `;
+
+  // Add CSS animation keyframes if not already added
+  if (!document.getElementById('loader-style')) {
+    const style = document.createElement('style');
+    style.id = 'loader-style';
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(loader);
+}
+
+function hidePageLoader() {
+  const loader = document.getElementById('page-loader');
+  if (loader) loader.remove();
+}
+document.getElementById('chatForm').addEventListener('submit', function () {
+  showPageLoader(); // 🔹 Show your existing page loader
+});
+
+
+// Initialize page with server data if available
+if (serverData && serverData.length > 0) {
+  currentData = serverData;
+  renderTable(serverData);
+  // Render chart for any data (not just specific report keys)
+  renderChart(serverData, serverReportKey, currentChartType);
+}
+
+function exportTableToCSV(filename) {
+    // Use allTableData if available (contains all data, not just paginated), 
+    // otherwise try to get from currentData or serverData
+    let dataToExport = allTableData && allTableData.length > 0 ? allTableData : (currentData && currentData.length > 0 ? currentData : (serverData && serverData.length > 0 ? serverData : []));
+    
+    // If no data in variables, try to read from DOM table as fallback
+    if (!dataToExport || dataToExport.length === 0) {
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+      if (!rows.length || rows[0].querySelector('td[colspan]')) {
+        alert("No data to export.");
+        return;
+      }
+      
+      // Read headers from thead
+      const headers = Array.from(document.querySelectorAll("#dataTable thead th"))
+        .map(th => th.innerText.trim().replace(/\s+/g, '_'));
+      
+      // Read data from tbody
+      const csv = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",")];
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("td");
+        if (cols.length > 0) {
+          const rowData = Array.from(cols)
+            .map(col => {
+              const text = col.innerText.trim();
+              // Escape quotes and wrap in quotes
+              return `"${text.replace(/"/g, '""')}"`;
+            })
+            .join(",");
+          csv.push(rowData);
+        }
+      });
+      
+      if (csv.length <= 1) {
+        alert("No data to export.");
+        return;
+      }
+      
+      const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+    
+    // Export from data array (preferred method - exports all data, not just visible rows)
+    // Get headers from first row
+    const headers = Object.keys(dataToExport[0]);
+    const csv = [headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(",")];
+    
+    // Add data rows
+    dataToExport.forEach(row => {
+      const rowData = headers.map(header => {
+        let value = row[header];
+        // Handle null/undefined
+        if (value === null || value === undefined) {
+          value = '';
+        }
+        // Convert to string and escape quotes
+        const text = String(value).replace(/"/g, '""');
+        return `"${text}"`;
+      });
+      csv.push(rowData.join(","));
+    });
+    
+    const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  // Toggle SQL visibility (if element exists)
+  const toggleSqlBtn = document.getElementById('toggleSql');
+  if (toggleSqlBtn) {
+    toggleSqlBtn.addEventListener('click', () => {
+      const container = document.getElementById('sqlContainer');
+      const icon = toggleSqlBtn.querySelector('i');
+      
+      if (container && container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        if (icon) icon.setAttribute('data-lucide', 'eye-off');
+      } else if (container) {
+        container.classList.add('hidden');
+        if (icon) icon.setAttribute('data-lucide', 'eye');
+      }
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+  }
+
+  </script>
+</body>
+
+</html>

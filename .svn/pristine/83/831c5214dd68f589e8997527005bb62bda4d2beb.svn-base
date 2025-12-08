@@ -1,0 +1,71 @@
+{
+  "title": "Products & Retail Dashboard",
+  "description": "Product sales performance, inventory insights, and retail analytics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "product_sales_summary",
+      "title": "Product Sales Summary",
+      "type": "metric",
+      "sql": "SELECT SUM(iid.quantity) as total_units_sold, SUM(iid.total_price) as total_revenue, COUNT(DISTINCT iid.item_name) as unique_products, COUNT(DISTINCT id.id) as total_transactions FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product'",
+      "config": {
+        "metrics": [
+          {"label": "Units Sold", "field": "total_units_sold", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Unique Products", "field": "unique_products", "format": "number"},
+          {"label": "Transactions", "field": "total_transactions", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "top_products",
+      "title": "Top Selling Products",
+      "type": "bar",
+      "sql": "SELECT iid.item_name, SUM(iid.quantity) as units_sold, SUM(iid.total_price) as revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' AND iid.SKU NOT IN ('') AND iid.category NOT IN ('') GROUP BY iid.item_name ORDER BY units_sold DESC LIMIT 15",
+      "config": {
+        "xAxis": "item_name",
+        "yAxis": "units_sold"
+      }
+    },
+    {
+      "id": "product_sales_trend",
+      "title": "Product Sales Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, SUM(iid.total_price) as revenue, SUM(iid.quantity) as units FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "revenue",
+        "secondaryAxis": "units"
+      }
+    },
+    {
+      "id": "sales_by_category",
+      "title": "Sales by Product Category",
+      "type": "pie",
+      "sql": "SELECT iid.category, SUM(iid.total_price) as total_sales, SUM(iid.quantity) as total_quantity FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY iid.category ORDER BY total_sales DESC",
+      "config": {
+        "labelField": "category",
+        "valueField": "total_sales"
+      }
+    },
+    {
+      "id": "product_performance_table",
+      "title": "Product Performance",
+      "type": "table",
+      "sql": "SELECT iid.item_name, iid.category, COUNT(DISTINCT id.id) as transaction_count, SUM(iid.quantity) as quantity_sold, SUM(iid.total_price) as total_sales FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'product' GROUP BY iid.item_name, iid.category ORDER BY total_sales DESC LIMIT 50",
+      "config": {
+        "columns": ["item_name", "category", "transaction_count", "quantity_sold", "total_sales"]
+      }
+    },
+    {
+      "id": "slow_movers",
+      "title": "Slow Moving Products",
+      "type": "table",
+      "sql": "SELECT pi.name AS product_name, pi.qoh AS quantity_on_hand, ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale FROM product_inventory AS pi LEFT JOIN invoice_items_detail AS iid ON iid.SKU = pi.sku LEFT JOIN invoice_details AS o ON o.id = iid.invoice_id GROUP BY pi.sku, pi.qoh, pi.name HAVING days_since_last_sale > 30 OR days_since_last_sale = -1 ORDER BY days_since_last_sale DESC LIMIT 20",
+      "config": {
+        "columns": ["product_name", "quantity_on_hand", "days_since_last_sale"]
+      }
+    }
+  ]
+}
+

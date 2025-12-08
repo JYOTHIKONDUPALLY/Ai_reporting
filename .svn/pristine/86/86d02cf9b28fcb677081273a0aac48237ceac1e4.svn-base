@@ -1,0 +1,101 @@
+{
+  "title": "Memberships",
+  "description": "Comprehensive overview of membership metrics, sales, and performance",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "membership_sales_summary",
+      "title": "Membership Sales Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT id.id) as total_sales, SUM(iid.total_price) as total_revenue, COUNT(DISTINCT id.customer_id) as unique_customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership'",
+      "config": {
+        "metrics": [
+          {"label": "Total Sales", "field": "total_sales", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Unique Customers", "field": "unique_customers", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "membership_sales_trend",
+      "title": "Membership Sales Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, SUM(iid.total_price) as revenue, COUNT(DISTINCT id.id) as sales_count FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "revenue",
+        "secondaryAxis": "sales_count"
+      }
+    },
+    {
+      "id": "top_memberships",
+      "title": "Top Membership Types",
+      "type": "bar",
+      "sql": "SELECT TRIM(iid.item_name) as membership_name, COUNT(DISTINCT id.id) as transaction_count, SUM(iid.total_price) as total_sales FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY membership_name ORDER BY total_sales DESC LIMIT 10",
+      "config": {
+        "xAxis": "membership_name",
+        "yAxis": "total_sales"
+      }
+    },
+    {
+      "id": "membership_by_category",
+      "title": "Memberships by Category",
+      "type": "pie",
+      "sql": "SELECT iid.category, SUM(iid.total_price) as total_sales, COUNT(DISTINCT id.id) as count FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY iid.category ORDER BY total_sales DESC",
+      "config": {
+        "labelField": "category",
+        "valueField": "total_sales"
+      }
+    },
+    {
+      "id": "membership_transactions",
+      "title": "Recent Membership Transactions",
+      "type": "table",
+      "sql": "SELECT id.invoice_date, id.customer_name, TRIM(iid.item_name) as membership_name, iid.total_price, id.franchise FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' ORDER BY id.invoice_date DESC LIMIT 50",
+      "config": {
+        "columns": ["invoice_date", "customer_name", "membership_name", "total_price", "franchise"]
+      }
+    },{
+      "id": "Membership Analytics - Active Memberships ",
+      "title": "Membership Analytics - Active Memberships",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) AS count,    SUM(recurring_amount) AS otal_recurring_amount,    AVG(recurring_amount) AS avg_price,    MIN(enrollment_date) AS oldest_enrollment,    MAX(enrollment_date) AS newest_enrollment FROM memberships WHERE is_active = 1 GROUP BY membership_type, membership_name ORDER BY count DESC;",
+      "config": {
+        "columns": ["membership_name", "count", "oldest_enrollment", "newest_enrollment"]
+      }
+    },{
+      "id": "Membership Analytics - Expiring Soon (next 30/60 days) ",
+      "title": "Membership Analytics - Expiring Soon (next 30/60 days)",
+      "type": "table",
+      "sql": "SELECT     COUNT(*) as expiring_30_days_count,    SUM(recurring_amount) as potential_revenue_at_risk,    AVG(recurring_amount) as avg_membership_value,    SUM(CASE WHEN auto_renew = 1 THEN 1 ELSE 0 END) as auto_renew_enabled,    SUM(CASE WHEN auto_renew = 0 THEN 1 ELSE 0 END) as manual_action_needed FROM memberships WHERE is_expiring_30days = 1;",
+      "config": {
+        "columns": ["expiring_30_days_count", "potential_revenue_at_risk", "avg_membership_value", "auto_renew_enabled", "manual_action_needed"]
+      }
+    },{
+      "id": "Membership Analytics - Lapsed Memberships ",
+      "title": "Membership Analytics - Lapsed Memberships",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) as lapsed_count,    SUM(recurring_amount) as lost_revenue,    AVG(ABS(days_to_expiration)) as avg_days_lapsed FROM memberships WHERE  is_lapsed = 1 GROUP BY membership_type, membership_name ORDER BY lapsed_count DESC;",
+      "config": {
+        "columns": ["membership_name", "lapsed_count", "lost_revenue", "avg_days_lapsed"]
+      }
+    },{
+      "id": "Membership Analytics - Auto-Renew Success Rate ",
+      "title": "Membership Analytics - Auto-Renew Success Rate",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) as total_auto_renew,    SUM(CASE WHEN is_auto_renew_failed = 0 THEN 1 ELSE 0 END) as successful,    SUM(CASE WHEN is_auto_renew_failed = 1 THEN 1 ELSE 0 END) as failed,    ROUND((SUM(CASE WHEN is_auto_renew_failed = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2) as success_rate,    SUM(recurring_amount) as total_revenue FROM memberships WHERE auto_renew = 1 GROUP BY membership_type, membership_name ORDER BY total_auto_renew DESC;",
+      "config": {
+        "columns": ["membership_name", "total_auto_renew", "successful", "failed", "success_rate", "total_revenue"]
+      }
+    },{
+      "id": "Membership Analytics - Churn Rate ",
+      "title": "Membership Analytics - Churn Rate",
+      "type": "table",
+      "sql": "SELECT     toYYYYMM(cancellation_date) AS churn_month,    toStartOfMonth(cancellation_date) AS month_start,    COUNT(*) AS churned_count,    COUNT(DISTINCT customer_id) AS unique_customers,    SUM(recurring_amount) AS lost_recurring_amount,    AVG(dateDiff('day', enrollment_date, cancellation_date)) AS avg_lifetime_days FROM memberships WHERE cancellation_date IS NOT NULL  AND cancellation_date >= (NOW() - INTERVAL 12 MONTH) GROUP BY churn_month, month_start ORDER BY churn_month DESC;",
+      "config": {
+        "columns": ["month_start", "churned_count", "unique_customers", "lost_recurring_amount", "avg_lifetime_days"]
+      }
+    }
+  ]
+}
+

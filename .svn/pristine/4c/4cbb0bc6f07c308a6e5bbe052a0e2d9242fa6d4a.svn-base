@@ -1,0 +1,60 @@
+{
+  "title": "Employee Dashboard",
+  "description": "Employee performance, sales attribution, and productivity metrics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "employee_summary",
+      "title": "Employee Performance Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT employee_id) as total_employees, COUNT(DISTINCT id) as total_transactions, SUM(total_amount) as total_sales FROM invoice_details WHERE employee_id IS NOT NULL AND employee_id != ''",
+      "config": {
+        "metrics": [
+          {"label": "Active Employees", "field": "total_employees", "format": "number"},
+          {"label": "Total Transactions", "field": "total_transactions", "format": "number"},
+          {"label": "Total Sales", "field": "total_sales", "format": "currency"}
+        ]
+      }
+    },
+    {
+      "id": "top_employees",
+      "title": "Top Performing Employees",
+      "type": "bar",
+      "sql": "SELECT employee_name, COUNT(DISTINCT id) as transaction_count, SUM(total_amount) as total_sales, AVG(total_amount) as avg_transaction FROM invoice_details WHERE employee_id IS NOT NULL AND employee_id != '' GROUP BY employee_id, employee_name ORDER BY total_sales DESC LIMIT 15",
+      "config": {
+        "xAxis": "employee_name",
+        "yAxis": "total_sales"
+      }
+    },
+    {
+      "id": "employee_sales_trend",
+      "title": "Employee Sales Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(invoice_date), '%Y-%m') as month, COUNT(DISTINCT employee_id) as active_employees, SUM(total_amount) as total_sales FROM invoice_details WHERE employee_id IS NOT NULL AND employee_id != '' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "total_sales",
+        "secondaryAxis": "active_employees"
+      }
+    },
+    {
+      "id": "employee_performance",
+      "title": "Employee Performance Details",
+      "type": "table",
+      "sql": "SELECT employee_name, COUNT(DISTINCT id) as transactions, COUNT(DISTINCT customer_id) as unique_customers, SUM(total_amount) as total_sales, AVG(total_amount) as avg_transaction, MAX(invoice_date) as last_sale FROM invoice_details WHERE employee_id IS NOT NULL AND employee_id != '' GROUP BY employee_id, employee_name ORDER BY total_sales DESC LIMIT 50",
+      "config": {
+        "columns": ["employee_name", "transactions", "unique_customers", "total_sales", "avg_transaction", "last_sale"]
+      }
+    },
+    {
+      "id": "employee_by_franchise",
+      "title": "Employee Performance by Franchise",
+      "type": "table",
+      "sql": "SELECT franchise, employee_name, COUNT(DISTINCT id) as transactions, SUM(total_amount) as total_sales FROM invoice_details WHERE employee_id IS NOT NULL AND employee_id != '' GROUP BY franchise, employee_id, employee_name ORDER BY franchise, total_sales DESC LIMIT 50",
+      "config": {
+        "columns": ["franchise", "employee_name", "transactions", "total_sales"]
+      }
+    }
+  ]
+}
+

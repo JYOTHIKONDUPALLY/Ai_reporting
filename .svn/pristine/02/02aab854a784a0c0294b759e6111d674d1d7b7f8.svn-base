@@ -1,0 +1,245 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+
+class DashboardService
+{
+    protected $clickhouse;
+    protected $configPath;
+
+    public function __construct(ClickhouseService $clickhouse)
+    {
+        $this->clickhouse = $clickhouse;
+        $this->configPath = storage_path('app/dashboards');
+        
+        // Create dashboards directory if it doesn't exist
+        if (!File::exists($this->configPath)) {
+            File::makeDirectory($this->configPath, 0755, true);
+        }
+    }
+
+    /**
+     * Load dashboard configuration from JSON file
+     */
+    public function loadDashboardConfig(string $dashboardType): ?array
+    {
+        $configFile = $this->configPath . '/' . $dashboardType . '.json';
+        
+        if (!File::exists($configFile)) {
+            Log::warning("Dashboard config not found: {$configFile}");
+            return null;
+        }
+
+        $config = json_decode(File::get($configFile), true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error("Invalid JSON in dashboard config: {$configFile}", [
+                'error' => json_last_error_msg()
+            ]);
+            return null;
+        }
+
+        return $config;
+    }
+
+    /**
+     * Execute SQL query for a widget
+     */
+    public function executeWidgetQuery(string $sql, array $params = []): array
+    {
+        try {
+            // Replace parameters in SQL if provided
+            foreach ($params as $key => $value) {
+                $sql = str_replace(':' . $key, $value, $sql);
+            }
+            
+            return $this->clickhouse->select($sql);
+        } catch (\Exception $e) {
+            Log::error("Widget query execution failed", [
+                'sql' => $sql,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get dashboard data with all widgets executed
+     */
+    public function getDashboardData(string $dashboardType, array $filters = []): array
+    {
+        $config = $this->loadDashboardConfig($dashboardType);
+        
+        if (!$config) {
+            return [
+                'error' => "Dashboard configuration not found: {$dashboardType}",
+                'widgets' => []
+            ];
+        }
+
+        $widgets = [];
+        
+        foreach ($config['widgets'] ?? [] as $widget) {
+            $sql = $widget['sql'] ?? '';
+            
+            if (empty($sql)) {
+                $widgets[] = [
+                    'id' => $widget['id'] ?? uniqid(),
+                    'title' => $widget['title'] ?? 'Untitled',
+                    'type' => $widget['type'] ?? 'table',
+                    'error' => 'No SQL query defined',
+                    'data' => []
+                ];
+                continue;
+            }
+
+            // Apply filters to SQL
+            $sql = $this->applyFilters($sql, $filters);
+            
+            // Execute query
+            $data = $this->executeWidgetQuery($sql, $widget['params'] ?? []);
+            
+            // Process pie chart data to limit to top 10 items
+            if (($widget['type'] ?? '') === 'pie' && !empty($data)) {
+                $data = $this->processPieChartData($data, $widget['config'] ?? []);
+            }
+            
+            $widgets[] = [
+                'id' => $widget['id'] ?? uniqid(),
+                'title' => $widget['title'] ?? 'Untitled',
+                'type' => $widget['type'] ?? 'table',
+                'config' => $widget['config'] ?? [],
+                'data' => $data,
+                'sql' => $sql
+            ];
+        }
+
+        return [
+            'title' => $config['title'] ?? ucfirst($dashboardType) . ' Dashboard',
+            'description' => $config['description'] ?? '',
+            'layout' => $config['layout'] ?? 'grid',
+            'widgets' => $widgets
+        ];
+    }
+
+    /**
+     * Process pie chart data to limit to top 10 items and group rest as "Others"
+     */
+    protected function processPieChartData(array $data, array $config): array
+    {
+        if (empty($data) || count($data) <= 10) {
+            return $data;
+        }
+
+        // Get the value field from config
+        $valueField = $config['valueField'] ?? null;
+        $labelField = $config['labelField'] ?? null;
+
+        // If config doesn't specify fields, try to infer from data
+        if (!$valueField || !$labelField) {
+            $keys = array_keys($data[0] ?? []);
+            if (count($keys) >= 2) {
+                $labelField = $labelField ?? $keys[0];
+                $valueField = $valueField ?? $keys[1];
+            } else {
+                return $data; // Can't process without proper fields
+            }
+        }
+
+        // Sort data by value in descending order
+        usort($data, function($a, $b) use ($valueField) {
+            $valA = is_numeric($a[$valueField] ?? 0) ? (float)$a[$valueField] : 0;
+            $valB = is_numeric($b[$valueField] ?? 0) ? (float)$b[$valueField] : 0;
+            return $valB <=> $valA;
+        });
+
+        // Take top 10 items
+        $topItems = array_slice($data, 0, 10);
+        $remainingItems = array_slice($data, 10);
+
+        // Calculate sum of remaining items
+        $othersSum = 0;
+        foreach ($remainingItems as $item) {
+            $value = is_numeric($item[$valueField] ?? 0) ? (float)$item[$valueField] : 0;
+            $othersSum += $value;
+        }
+
+        // Add "Others" item if there are remaining items
+        if ($othersSum > 0 && !empty($remainingItems)) {
+            $othersItem = [];
+            $othersItem[$labelField] = 'Others';
+            $othersItem[$valueField] = $othersSum;
+            
+            // Preserve other fields from the first remaining item
+            foreach (array_keys($remainingItems[0]) as $key) {
+                if ($key !== $labelField && $key !== $valueField) {
+                    $othersItem[$key] = null; // or set to a default value
+                }
+            }
+            
+            $topItems[] = $othersItem;
+        }
+
+        return $topItems;
+    }
+
+    /**
+     * Apply date and other filters to SQL query
+     */
+    protected function applyFilters(string $sql, array $filters): string
+    {
+        // Apply date range filter if provided
+        if (isset($filters['start_date']) && isset($filters['end_date'])) {
+            // Check if WHERE clause exists
+            if (stripos($sql, 'WHERE') !== false) {
+                $sql .= " AND invoice_date BETWEEN toDate('{$filters['start_date']}') AND toDate('{$filters['end_date']}')";
+            } else {
+                $sql .= " WHERE invoice_date BETWEEN toDate('{$filters['start_date']}') AND toDate('{$filters['end_date']}')";
+            }
+        }
+
+        // Apply franchise filter if provided
+        if (isset($filters['franchise'])) {
+            if (stripos($sql, 'WHERE') !== false) {
+                $sql .= " AND franchise = '{$filters['franchise']}'";
+            } else {
+                $sql .= " WHERE franchise = '{$filters['franchise']}'";
+            }
+        }
+
+        return $sql;
+    }
+
+    /**
+     * List all available dashboard types
+     */
+    public function listDashboards(): array
+    {
+        $dashboards = [];
+        
+        if (!File::exists($this->configPath)) {
+            return $dashboards;
+        }
+
+        $files = glob($this->configPath . '/*.json');
+
+        foreach ($files as $filePath) {
+            $fileName = basename($filePath, '.json');
+            $config = json_decode(File::get($filePath), true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && is_array($config)) {
+                $dashboards[] = [
+                    'type' => $fileName,
+                    'title' => $config['title'] ?? ucfirst(str_replace('-', ' ', $fileName)),
+                    'description' => $config['description'] ?? ''
+                ];
+            }
+        }
+
+        return $dashboards;
+    }
+}
+

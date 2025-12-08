@@ -1,0 +1,143 @@
+# Dynamic Dashboard Configuration Guide
+
+This directory contains JSON configuration files for dynamic dashboards. Each dashboard is defined by a JSON file that specifies widgets, their SQL queries, and display configurations.
+
+## Dashboard Structure
+
+Each dashboard JSON file follows this structure:
+
+```json
+{
+  "title": "Dashboard Title",
+  "description": "Dashboard description",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "unique_widget_id",
+      "title": "Widget Title",
+      "type": "metric|table|bar|line|pie",
+      "sql": "SELECT ... FROM ...",
+      "config": {
+        // Widget-specific configuration
+      }
+    }
+  ]
+}
+```
+
+## Widget Types
+
+### 1. Metric Widget
+Displays key metrics in a card format.
+
+```json
+{
+  "id": "sales_summary",
+  "title": "Sales Summary",
+  "type": "metric",
+  "sql": "SELECT SUM(total) as revenue, COUNT(*) as orders FROM invoices",
+  "config": {
+    "metrics": [
+      {"label": "Revenue", "field": "revenue", "format": "currency"},
+      {"label": "Orders", "field": "orders", "format": "number"}
+    ]
+  }
+}
+```
+
+**Format options:** `currency`, `number`
+
+### 2. Table Widget
+Displays data in a table format.
+
+```json
+{
+  "id": "customer_list",
+  "title": "Customer List",
+  "type": "table",
+  "sql": "SELECT customer_name, total_spent FROM customers ORDER BY total_spent DESC LIMIT 50",
+  "config": {
+    "columns": ["customer_name", "total_spent"]
+  }
+}
+```
+
+### 3. Chart Widgets (Bar, Line, Pie)
+Visualize data using Chart.js.
+
+```json
+{
+  "id": "sales_trend",
+  "title": "Sales Trend",
+  "type": "line",
+  "sql": "SELECT month, revenue FROM monthly_sales ORDER BY month",
+  "config": {
+    "xAxis": "month",
+    "yAxis": "revenue"
+  }
+}
+```
+
+**Chart types:** `bar`, `line`, `pie`
+
+## Date Filtering
+
+Dashboards automatically support date filtering. Add date filters to your SQL queries using:
+
+```sql
+WHERE invoice_date BETWEEN toDate('{start_date}') AND toDate('{end_date}')
+```
+
+The dashboard service will automatically inject the date range from the filter inputs.
+
+## Available Dashboards
+
+1. **membership.json** - Membership Dashboard
+2. **products-retail.json** - Products & Retail Dashboard
+3. **customer.json** - Customer Dashboard
+4. **range-usage.json** - Range Usage Dashboard
+5. **classes-training.json** - Classes & Training Dashboard
+6. **employee.json** - Employee Dashboard
+7. **financial-revenue.json** - Financial & Revenue Dashboard
+
+## Creating a New Dashboard
+
+1. Create a new JSON file in `storage/app/dashboards/`
+2. Define your dashboard structure with widgets
+3. Access it at `/dashboards/{filename-without-extension}`
+
+## Example: Adding a New Widget
+
+To add a widget to an existing dashboard:
+
+1. Open the dashboard JSON file
+2. Add a new widget object to the `widgets` array:
+
+```json
+{
+  "id": "new_widget",
+  "title": "New Widget",
+  "type": "bar",
+  "sql": "SELECT category, SUM(amount) as total FROM sales GROUP BY category",
+  "config": {
+    "xAxis": "category",
+    "yAxis": "total"
+  }
+}
+```
+
+3. Save the file - the dashboard will automatically update on next load
+
+## SQL Query Tips
+
+- Use ClickHouse SQL syntax
+- Ensure your queries return data in the expected format
+- For date filtering, use the pattern shown above
+- Test queries in the reports section first before adding to dashboards
+
+## Troubleshooting
+
+- **Widget not showing data**: Check the SQL query syntax and ensure it returns data
+- **Charts not rendering**: Verify the data structure matches the config (xAxis/yAxis fields exist)
+- **Date filters not working**: Ensure your SQL includes the date filter pattern
+

@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>88 Tactical Analytics</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: {
+            'soft': '0 10px 30px rgba(2, 6, 23, .06)'
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+
+  <style>
+    .scroll-smooth::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .scroll-smooth::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, .15);
+      border-radius: 999px;
+    }
+
+    .section-header {
+      background: #dc2626;
+      color: white;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+  <div class="h-screen grid grid-cols-12">
+    <!-- Sidebar -->
+    <aside class="col-span-12 md:col-span-3 xl:col-span-2 bg-white border-r border-slate-200 p-3 md:p-4 overflow-y-auto">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-8 h-8 rounded-xl bg-brand-600/10 grid place-items-center"><img src="data:image/jpeg;base64,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">
+        </div>
+        <div class="font-semibold"><a href="/reports"><h1>
+  <span style="color:#33a1df; font-weight:bold;font-size:120%;">bizz</span>
+  <span style="color:#333; font-weight:bold;font-size:120%;">AI</span>
+  <span style="color:#9dc8f0; font: weight 500px; font-size:80%;"> Analytics</span>
+</h1>
+</a></div>
+      </div>
+
+      <!-- Search -->
+      <div class="mb-4">
+        <div class="flex items-center gap-2 rounded-xl ring-1 ring-slate-200 bg-slate-50 px-3 py-2">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+          <input id="report-search" placeholder="Find a report…" class="w-full bg-transparent outline-none text-sm" />
+        </div>
+      </div>
+
+      <nav id="report-nav" class="space-y-4 text-sm">
+        <!-- Predefined Reports -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Predefined Reports</div>
+          <ul class="space-y-1">
+            <li><a href="{{ route('reports.predefined', 'daily-sales') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Daily Sales</a></li>
+            <li><a href="{{ route('reports.predefined', 'top-items') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Top Items</a></li>
+            <li><a href="{{ route('reports.predefined', 'revenue-by-franchise') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Revenue by Franchise</a></li>
+            <li><a href="{{ route('reports.predefined', 'payments-by-method') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Payments by Method</a></li>
+            <li><a href="{{ route('reports.predefined', 'refunds') }}" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 block">Refunds</a></li>
+          </ul>
+        </div>
+        <!-- Custom Reports -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Custom Reports</div>
+          <ul class="space-y-1">
+            <li><button data-report="top_spenders" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top spending customers</button></li>
+            <li><button data-report="all_customers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">All customers</button></li>
+            <li><button data-report="members" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Members only</button></li>
+            <li><button data-report="non_members" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Non‑Members only</button></li>
+            <li><button data-report="product_performance" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Product Performance</button></li>
+          </ul>
+        </div>
+
+        <!-- Products -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Products</div>
+          <ul class="space-y-1">
+            <li><button data-report="prd_top_sold" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top products sold (with exclusions)</button></li>
+            <li><button data-report="prd_turnover" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">High turnover products</button></li>
+            <li><button data-report="prd_least" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Least purchased products</button></li>
+            <li><button data-report="prd_slow_movers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Slow movers – longest on shelf</button></li>
+            <li><button data-report="cln_sale_report_dly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Daily</button></li>
+            <li><button data-report="cln_sale_report_wkly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Weekly</button></li>
+            <li><button data-report="cln_sale_report_mnthly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Monthly</button></li>
+            <li><button data-report="sale_by_category" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Product Category</button></li>
+            <li><button data-report="sale_by_subCategory" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Product Sub categories</button></li>
+            <li><button data-report="Trans_count_products" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Transaction Count for products</button></li>
+          </ul>
+        </div>
+        <!-- Memberships -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Memberships</div>
+          <ul class="space-y-1">
+            <li><button data-report="cln_sale_mem_report_dly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Daily</button></li>
+            <li><button data-report="cln_sale_mem_report_wkly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Weekly</button></li>
+            <li><button data-report="cln_sale_mem_report_mnthly" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Clean Sales Report - Monthly</button></li>
+            <li><button data-report="mem_sale_by_category" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Sales By Membership Category</button></li>
+            <li><button data-report="mem_Trans_count" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Transaction Count of Memberships</button></li>
+          </ul>
+        </div>
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Services</div>
+          <ul class="space-y-1">
+            <li><button data-report="svc_top_new" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top services for NEW customers</button></li>
+            <li><button data-report="svc_first_service_customers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Customers whose first item is a service</button></li>
+            <li><button data-report="range_busiest_month" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Gun Range – Busiest month</button></li>
+            <li><button data-report="range_busiest_dow" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Gun Range – Busiest day of week</button></li>
+          </ul>
+        </div>
+
+        <!-- Classes -->
+        <div>
+          <div class="uppercase text-xs mb-2 section-header">Classes</div>
+          <ul class="space-y-1">
+            <li><button data-report="cls_popular" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Most popular classes</button></li>
+            <li><button data-report="cls_new_customers" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Classes bringing NEW customers</button></li>
+            <li><button data-report="cls_top_spenders" class="rep-btn w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Top 100 class spenders</button></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="col-span-12 md:col-span-9 xl:col-span-7 p-4 md:p-6 overflow-y-auto">
+     <div class="flex items-center justify-center mb-6">
+  <div class="flex items-center gap-2">
+    <div class="w-8 h-8 rounded-xl bg-brand-600/10 grid place-items-center">
+      <img src="https://www.bizzflo.com/images/sp/2087/200_83578881.png" alt="Logo" class="w-6 h-6">
+    </div>
+    <div class="font-semibold text-gray-800 text-lg">
+      <a href="/reports" class="hover:text-brand-600 transition">88 Tactical Analytics</a>
+    </div>
+  </div>
+</div>
+
+      <div class="bg-red-600 text-white px-6 py-3 rounded-t-lg flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5"></i>
+          <span id="active-report-title" class="font-semibold">Select a report</span>
+        </div>
+        <div class="ml-auto"></div>
+        <!-- <select id="audience" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm">
+          <option value="all" selected>All Customers</option>
+          <option value="members">Members only</option>
+          <option value="non_members">Non‑Members only</option>
+        </select> -->
+        <!-- <select id="limitN" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm color-black">
+          <option value="10">Top 10</option>
+          <option value="20">Top 20</option>
+          <option value="50">Top 50</option>
+          <option value="100" selected>Top 100</option>
+        </select> -->
+        <!-- <input id="dateStart" type="date" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm" />
+        <input id="dateEnd" type="date" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm" /> -->
+        <!-- <button id="applyFilters" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm hover:bg-slate-800">Apply</button> -->
+      </div>
+      <div class="bg-white rounded-2xl ring-1 ring-slate-200 shadow-soft hidden">
+        <div class="p-3 border-b border-slate-100 flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4 text-slate-500"></i>
+          <div class="text-sm font-medium">Generated SQL (ClickHouse)</div>
+          <div class="ml-auto flex items-center gap-2">
+            <button id="toggleSql" title="Toggle SQL View" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            <button id="copySql" title="Copy SQL" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="copy" class="w-4 h-4"></i></button>
+            <button id="runSql" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs">Run</button>
+          </div>
+        </div>
+        <div id="sqlContainer" class="hidden">
+          <pre id="sqlBox" class="p-4 overflow-auto text-sm bg-slate-50 rounded-b-2xl code"><span class="text-slate-400">-- SQL for the selected report will appear here</span></pre>
+        </div>
+      </div>
+
+
+      <!-- Tabs -->
+      <div class="bg-white">
+        <div class="flex gap-2 border-b border-gray-200 px-6 pt-4">
+          <button class="tab-btn active px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-red-600 text-red-600" data-tab="table">
+            <i data-lucide="table" class="w-4 h-4"></i>
+            Table View
+          </button>
+          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="chart">
+            <i data-lucide="pie-chart" class="w-4 h-4"></i>
+            Chart View
+          </button>
+          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="export">
+            <i data-lucide="download" class="w-4 h-4 inline-block mr-2"></i>Export Data
+          </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="px-6 pb-6">
+          <!-- Table View -->
+          <div id="tab-table" class="tab-content pt-4">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table id="dataTable" class="min-w-full text-sm">
+                  <thead id="tableHead"></thead>
+                  <tbody id="tableBody">
+                    <tr>
+                      <td colspan="100" class="text-center text-slate-500 py-8">
+                        Select a report from the sidebar to view data
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="paginationControls" class="mb-3"></div>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- Chart View -->
+          <div id="tab-chart" class="tab-content hidden pt-4">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="text-sm font-medium text-slate-700">Chart Visualization</div>
+                <div class="flex gap-2">
+                  <button class="chart-type-btn active px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200" data-chart-type="pie">
+                    <i data-lucide="pie-chart" class="w-4 h-4 inline-block mr-1"></i>
+                    Pie
+                  </button>
+                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="line">
+                    <i data-lucide="trending-up" class="w-4 h-4 inline-block mr-1"></i>
+                    Line
+                  </button>
+                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="bar">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline-block mr-1"></i>
+                    Bar
+                  </button>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <!-- Export section -->
+         <div id="tab-export" class="tab-content hidden pt-4">
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-gray-700 text-center">
+    
+    <!-- Download Icon and Label -->
+    <div class="flex flex-col items-center justify-center">
+      <i data-lucide="download" class="w-24 h-24 text-sky-500 mb-4"></i>
+      <button id="exportCSV" class="text-sky-600 text-base font-medium hover:underline">
+        Download CSV
+      </button>
+    </div>
+
+    <p class="mt-6 text-xs text-slate-400">
+      The export will include the currently displayed table data.
+    </p>
+  </div>
+</div>
+
+        </div>
+      </div>
+
+      <!-- AI Chat Section -->
+      <div class="mt-6 bg-white rounded-lg shadow p-6">
+  <div class="flex items-center gap-2 mb-4">
+    <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i>
+    <h3 class="text-base text-gray-700">Ask for a report in plain english</h3>
+  </div>
+
+  <form method="POST" action="{{ route('reports.askAi') }}" id="chatForm">
+    @csrf
+    <div class="flex gap-3 mb-4">
+      <input id="chatInput" name="question" type="text" placeholder="e.g., top 20 non-members by spend last quarter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">RUN QUERY</button>
+    </div>
+  </form>
+
+  <div class="text-sm text-gray-600 mb-3">Frequently asked reports:</div>
+  <div class="flex flex-wrap gap-2">
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Top 10 spending customers this month</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Show me monthly sales trends for 2025</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">High turnover products</button>
+    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Give me basic report for invoice list for this month</button>
+  </div>
+</div>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="col-span-12 xl:col-span-3 border-l border-slate-200 bg-white p-4 flex flex-col overflow-y-auto">
+      <div class="mb-6">
+        <h3 class="section-header">Most popular Queries</h3>
+        <div class="flex flex-wrap gap-2 mt-4 ">
+          <span data-query="Top products sold (with exclusions)" class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200">Top products sold (with exclusions)</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="High turnover products">High turnover products</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Least purchased products">Least purchased products</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Slow movers-longest on shelf">Slow movers-longest on shelf</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Daily">Clean Sales Report - Daily</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Weekly">Clean Sales Report - Weekly</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Monthly">Clean Sales Report - Monthly</span>
+          <span class="popular-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Sales By Product Category">Sales By Product Category</span>
+        </div>
+        <div class="flex justify-center mt-4">
+<button id="runPopularQuery" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Run query</button>
+        </div>
+        
+      </div>
+
+      <div>
+        <h3 class="section-header">My last 10 Queries</h3>
+        <div class="flex flex-wrap gap-2 mt-4">
+           <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Top products sold">Top products sold (with exclusions)</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="High turnover products">High turnover products</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Least purchased products">Least purchased products</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Slow movers-longest on shelf">Slow movers-longest on shelf</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Daily">Clean Sales Report - Daily</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200" data-query="Clean Sales Report - Weekly">Clean Sales Report - Weekly</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200"data-query="Clean Sales Report - Monthlys">Clean Sales Report - Monthly</span>
+          <span class="last-query-pill px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700 cursor-pointer hover:bg-gray-200"data-query="Sales By Product Category">Sales By Product Category</span>
+        </div>
+         <div class="flex justify-center mt-4">
+    <button id="runLastQuery" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+      Run query
+    </button>
+  </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const savedTitle = localStorage.getItem('activeReportTitle');
+    if (savedTitle) {
+        document.getElementById('active-report-title').textContent = savedTitle;
+    }
+});
+    const TITLES = {
+      top_spenders: 'Top spending customers',
+      all_customers: 'All customers (within date range)',
+      members: 'Members only',
+      non_members: 'Non‑Members only',
+      non_member_savings: 'Top Non‑Members – potential membership savings',
+      repeat_behavior: 'Repeat purchases by item/category',
+      svc_top_new: 'Top services for NEW customers',
+      svc_first_service_customers: 'Customers whose first purchase was a service',
+      range_busiest_month: 'Gun Range – busiest month',
+      range_busiest_dow: 'Gun Range – busiest day of week (avg last 12 months)',
+      cls_popular: 'Most popular classes',
+      cls_new_customers: 'Classes bringing NEW customers',
+      cls_top_spenders: 'Top 100 class spenders',
+      prd_top_sold: 'Top products sold (with exclusions)',
+      prd_turnover: 'High turnover products',
+      prd_least: 'Least purchased products',
+      prd_slow_movers: 'Slow movers – longest on shelf',
+      cln_sale_report_dly: 'Clean Sales Report - Daily',
+      cln_sale_report_wkly: 'Clean Sales Report - weekly',
+      cln_sale_report_mnthly: 'Clean Sales Report - Monthly',
+      sale_by_category: 'Sales By Product Category',
+      sale_by_subCategory: 'Sales By Product Sub categories',
+      Trans_count_products: 'Transaction Count for products',
+      mem_sale_by_category: 'Sales By Membership Category',
+      mem_Trans_count: 'Transaction Count of Memberships',
+      cln_sale_mem_report_dly: 'Clean Sales Report - Daily',
+      cln_sale_mem_report_wkly: 'Clean Sales Report - Weekly',
+      cln_sale_mem_report_mnthly: 'Clean Sales Report - Monthly',
+    };
+
+
+    const SQLS = {
+      top_spenders: ({
+        audience,
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `where invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+
+        return `/* Top ${N} ${audience?.replace('_', '-')} customers by spend */ 
+SELECT  customer_name, SUM(total_amount) AS total_spent
+                 FROM invoice_details ${dateFilter}
+                 GROUP BY customer_id, customer_name
+                 ORDER BY total_spent DESC
+                 LIMIT ${N};`
+      },
+      all_customers: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `where invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* All customers who purchased in range */
+SELECT distinct customer_name as CustomerName
+FROM invoice_details
+${dateFilter}`
+      },
+      members: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `SELECT distinct customer_name FROM invoice_details WHERE is_member=1 ${dateFilter}`
+      },
+      non_members: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `SELECT distinct customer_name FROM invoice_details WHERE is_member=0 ${dateFilter}`
+      },
+      non_member_savings: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        let dateFilter1 = '';
+        if (start && end) {
+          dateFilter = `AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+          dateFilter1 = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Potential savings for top non-members (assumes :discount_pct and :membership_price) */
+WITH ranked AS (
+  SELECT customer_id, sum(total) AS spend
+  FROM invoice_details
+  WHERE is_member_snapshot=0 ${dateFilter}
+  GROUP BY customer_id
+  ORDER BY spend DESC
+  LIMIT ${N}
+), eligible AS (
+  SELECT o.customer_name, sum(oi.total_price) AS eligible_total
+  FROM invoice_details o
+  INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+  WHERE o.customer_id IN (SELECT customer_id FROM ranked)
+    ${dateFilter1}
+    AND oi.item_type IN ('product','service','class')
+  GROUP BY o.customer_id
+)
+SELECT customer_name, customer_id,
+       eligible_total,
+       round(eligible_total * :discount_pct, 2) AS discount_value,
+       :membership_price AS membership_cost,
+       round(eligible_total * :discount_pct - :membership_price, 2) AS net_savings
+FROM eligible
+ORDER BY net_savings DESC;`
+      },
+      product_performance: ({
+        start,
+        end,
+        N
+      }) => `/* Top ${N} products spend by their top spending customers*/
+WITH top_customers AS (
+    SELECT customer_id, customer_name, SUM(total_amount) AS total_spent
+    FROM invoice_details
+    GROUP BY customer_id, customer_name
+    ORDER BY total_spent DESC
+    LIMIT ${N}
+),
+ranked_products AS (
+    SELECT
+        tc.customer_id,
+        tc.customer_name,
+        iid.item_name,
+        SUM(iid.total_price) AS total_spent,
+        ROW_NUMBER() OVER (
+            PARTITION BY tc.customer_id
+            ORDER BY SUM(iid.total_price) DESC
+        ) AS rn
+    FROM top_customers AS tc
+    INNER JOIN invoice_details AS id
+        ON tc.customer_id = id.customer_id
+    INNER JOIN invoice_items_detail AS iid
+        ON iid.invoice_id = id.id
+    WHERE iid.item_type = 'product'
+    GROUP BY tc.customer_id, tc.customer_name, iid.item_name
+) select 	tc.customer_name AS customer, rp.item_name AS ITEM, sum(rp.total_spent) AS total_spent 
+ from ranked_products rp where rn<=${N} GROUP BY customer, ITEM , rn ORDER BY total_spent DESC,  rn ASC;`,
+
+      repeat_behavior: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `WHERE o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          dateFilter = `WHERE o.invoice_date BETWEEN toDate('2023-01-01') AND toDate('2025-09-01')`;
+        }
+        return `/* Customers with >1 instance of same item/category in period */
+SELECT customer_id, item_type, anyHeavy(item_name) AS sample_item, count() AS occurrences
+FROM invoice_details o
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+${dateFilter}
+GROUP BY customer_id, item_type, item_name
+HAVING occurrences > 1
+ORDER BY occurrences DESC
+LIMIT ${N};`
+      },
+      svc_top_new: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND ft.first_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Top services that are first-ever purchase for customers */
+WITH first_dt AS (
+    SELECT 
+        customer_id, 
+        MIN(invoice_date) AS first_date 
+    FROM invoice_details 
+    GROUP BY customer_id
+)
+SELECT 
+    iid.item_name AS service_name, 
+    COUNT(DISTINCT ft.customer_id) AS new_customers
+FROM first_dt ft
+INNER JOIN invoice_details id 
+    ON id.customer_id = ft.customer_id 
+    AND id.invoice_date = ft.first_date
+INNER JOIN invoice_items_detail iid 
+    ON iid.invoice_id = id.id
+WHERE 
+    iid.item_type = 'service'
+   ${dateFilter} -- Filter first purchase date
+GROUP BY service_name
+ORDER BY new_customers DESC
+LIMIT ${N};`
+      },
+      svc_first_service_customers: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date
+BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Customers whose first purchase was a service */
+WITH first_dt AS (
+  SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id
+)
+SELECT distinct o.customer_name as CustomerName , oi.item_name as Service , DATE_FORMAT(ft.first_date, '%d %b %Y') as First_Purchase_Date
+FROM first_dt ft
+INNER JOIN invoice_details o ON o.customer_id=ft.customer_id 
+AND o.invoice_date=ft.first_date
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' `
+      },
+      range_busiest_month: ({
+        start,
+        end,
+        audience
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Range busiest month by distinct customers */
+SELECT formatDateTime(invoice_date, '%Y-%m') AS yyyymm, countDistinct(customer_id) AS customers
+FROM invoice_details o INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
+ ${dateFilter}
+  ${audience==='members' ? 'AND is_member_snapshot=1' : audience==='non_members' ? 'AND is_member_snapshot=0' : ''}
+GROUP BY yyyymm
+ORDER BY customers DESC
+LIMIT 1;`
+      },
+      range_busiest_dow: ({
+        audience,
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `  AND invoice_date >= addMonths(${start}, -12) AND invoice_date <= addMonths(${end}), -12)`;
+        }
+        return `/* Busiest day of week (avg last 12 months) */
+SELECT formatDateTime(invoice_date, '%d') AS dow,
+       countDistinct(customer_id) / countDistinct(toDate(invoice_date)) AS avg_customers
+FROM invoice_details o INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
+ ${dateFilter}
+  ${audience==='members' ? 'AND is_member_snapshot=1' : audience==='non_members' ? 'AND is_member_snapshot=0' : ''}
+GROUP BY dow
+ORDER BY avg_customers DESC`
+      },
+      cls_popular: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('2023-01-01') AND toDate('2025-09-01')`;
+        }
+        return `/* Most popular classes */
+SELECT oi.item_name AS class_name, sum(oi.quantity) AS seats_sold, countDistinct(o.id) AS invoice_Count
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY class_name
+ORDER BY seats_sold DESC
+LIMIT ${N};`
+      },
+      cls_new_customers: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Classes that bring NEW customers */
+WITH first_dt AS (
+  SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id
+)
+SELECT oi.item_name AS class_name, count() AS new_customers
+FROM first_dt ft
+INNER JOIN invoice_details o ON o.customer_id=ft.customer_id AND o.invoice_date=ft.first_date
+INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY class_name
+ORDER BY new_customers DESC
+LIMIT ${N};`
+      },
+      cls_top_spenders: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Top 100 customers by class spend */
+SELECT o.customer_name, sum(oi.total_price) AS class_spend, count() AS class_lines
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='class' ${dateFilter}
+GROUP BY o.customer_name
+ORDER BY class_spend DESC
+LIMIT 100;`
+      },
+      prd_top_sold: ({
+        start,
+        end,
+        N,
+        audience
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Top products sold with sample exclusions (:exclude_skus, :exclude_categories) */
+SELECT oi.item_name, sum(oi.quantity) AS units, sum(oi.total_price) AS revenue
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' ${dateFilter}
+  ${audience==='members' ? 'AND is_member_snapshot=1' : audience==='non_members' ? 'AND is_member_snapshot=0' : ''}
+  AND oi.SKU NOT IN ('')
+AND oi.category NOT IN ('')
+GROUP BY oi.item_name
+ORDER BY units DESC
+LIMIT ${N};`
+      },
+      prd_turnover: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* High turnover products (line count) */
+SELECT oi.item_name, count() AS lines, sum(oi.quantity) AS units
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' ${dateFilter}
+GROUP BY oi.item_name
+ORDER BY lines DESC
+LIMIT ${N};`
+      },
+      prd_least: ({
+        start,
+        end,
+        N
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        return `/* Least purchased products by units */
+SELECT oi.item_name, sum(oi.quantity) AS units
+FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
+WHERE oi.item_type='product' 
+GROUP BY oi.item_name
+ORDER BY units ASC
+LIMIT ${N};`
+      },
+      prd_slow_movers: ({
+        N
+      }) => `/* Slow movers (inventory-based) */
+SELECT 
+    pi.name AS product_name,
+    pi.qoh AS quantity_on_hand,
+    ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale
+FROM product_inventory AS pi
+LEFT JOIN invoice_items_detail AS iid
+    ON iid.SKU = pi.sku
+LEFT JOIN invoice_details AS o
+    ON o.id = iid.invoice_id
+GROUP BY pi.sku, pi.qoh, pi.name
+ORDER BY days_since_last_sale DESC
+LIMIT ${N};
+
+`,
+      cln_sale_report_dly: () => `/* Clean Sales Report - Daily */
+    SELECT 
+    DATE_FORMAT(id.invoice_date, '%d %b %Y'),
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+GROUP BY id.invoice_date, iid.item_name
+ORDER BY id.invoice_date DESC, total_sales DESC`,
+      cln_sale_report_wkly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          dateFilter = `AND id.invoice_date BETWEEN '2001-01-01' AND '2024-12-31'`;
+        }
+        return `/* Clean Sales Report - Weekly */
+SELECT 
+    DATE_FORMAT(toStartOfWeek(id.invoice_date), '%d %b %Y') AS week_start,
+    DATE_FORMAT(toStartOfWeek(id.invoice_date) + INTERVAL 6 DAY, '%d %b %Y') AS week_end,
+    iid.item_name,
+    SUM(iid.total_price) AS total_sales,
+    COUNT(DISTINCT id.id) AS invoice_count
+FROM invoice_details AS id
+INNER JOIN invoice_items_detail AS iid 
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+    ${dateFilter}
+GROUP BY 
+    toStartOfWeek(id.invoice_date),  -- use the raw expression, not alias
+    iid.item_name
+ORDER BY 
+    toStartOfWeek(id.invoice_date) ASC, 
+    total_sales DESC;`
+      },
+      cln_sale_report_mnthly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        // else{
+        //   dateFilter=` AND invoice_date BETWEEN toDate('2023-01-01') AND toDate('2024-12-31')`
+        // }
+        return `/* Clean Sales Report - Monthly */
+        SELECT
+    formatDateTime(toStartOfMonth(invoice_date), '%M %Y') AS month_name,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+ ${dateFilter}
+GROUP BY  id.invoice_date,iid.item_name
+ORDER BY id.invoice_date   ASC, total_sales DESC
+`
+      },
+      sale_by_category: ({
+        start,
+        end
+      }) => {
+        return `
+  SELECT
+    iid.category,
+    iid.item_name,
+    COUNT(DISTINCT id.id) as invoice_count,
+    sum(iid.quantity) as qty_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+GROUP BY iid.category, iid.item_name
+ORDER BY iid.category, total_sales DESC`
+      },
+      sale_by_subCategory: () => {
+        return `
+  SELECT
+iid.item_name,
+    iid.subcategory,
+    COUNT(DISTINCT id.id) as invoice_count,
+    COUNT(iid.quantity ) as item_count,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+GROUP BY  iid.item_name, iid.subcategory
+ORDER BY iid.subcategory, total_sales DESC`
+      },
+      Trans_count_products: ({
+        start,
+        end
+      }) => {
+        return `
+SELECT
+    iid.item_name,
+    COUNT(DISTINCT id.id) as transaction_count,
+    sum(iid.quantity) as Quantity_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'product'
+GROUP BY iid.item_name
+ORDER BY transaction_count DESC`
+      },
+      cln_sale_mem_report_dly: () => `/* Clean Sales Report - Daily */
+SELECT 
+    id.invoice_date,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+GROUP BY id.invoice_date, iid.item_name
+ORDER BY id.invoice_date DESC, total_sales DESC`,
+      cln_sale_mem_report_wkly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        } else {
+          dateFilter = `AND id.invoice_date BETWEEN '2001-01-01' AND '2024-12-31'`;
+        }
+        return `/* Clean Sales Report - Weekly */
+SELECT 
+toStartOfWeek(id.invoice_date) AS week_start,
+    toStartOfWeek(id.invoice_date) + 6 AS week_end,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid 
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+    ${dateFilter}
+GROUP BY week_start,iid.item_name
+ORDER BY week_start Asc, total_sales DESC`
+      },
+      cln_sale_mem_report_mnthly: ({
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          dateFilter = ` AND invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+        }
+        // else{
+        //   dateFilter=` AND invoice_date BETWEEN toDate('2023-01-01') AND toDate('2024-12-31')`
+        // }
+        return `/* Clean Sales Report - Monthly */
+        SELECT
+    formatDateTime(toStartOfMonth(invoice_date), '%M %Y') AS month_name,
+    iid.item_name,
+    SUM(iid.total_price) as total_sales,
+    COUNT(DISTINCT id.id) as invoice_count
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+ ${dateFilter}
+GROUP BY  id.invoice_date,iid.item_name
+ORDER BY id.invoice_date   ASC, total_sales DESC
+`
+      },
+      mem_sale_by_category: ({
+        start,
+        end
+      }) => {
+        return `
+  SELECT
+    iid.category,
+    TRIM(iid.item_name) as item_name,
+    COUNT(DISTINCT id.id) as invoice_count,
+    sum(iid.quantity) as qty_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+GROUP BY iid.category,  TRIM(iid.item_name)
+ORDER BY iid.category, total_sales DESC`
+      },
+      mem_Trans_count: ({
+        start,
+        end
+      }) => {
+        return `
+SELECT
+   TRIM(iid.item_name) as item_name,
+    COUNT(DISTINCT id.id) as transaction_count,
+    sum(iid.quantity) as times_sold,
+    SUM(iid.total_price) as total_sales
+FROM invoice_details id
+INNER JOIN invoice_items_detail iid
+    ON id.id = iid.invoice_id
+WHERE iid.item_type = 'membership'
+GROUP BY TRIM(iid.item_name)
+ORDER BY transaction_count DESC`
+      }
+    };
+
+
+    lucide.createIcons();
+
+// Get data from server (passed from Laravel Blade)
+const serverData = @json($results ?? []);
+const serverReportKey = @json($reportKey ?? null);
+const serverSql = @json($sql ?? null);
+let currentData = serverData || [];
+let currentChart = null;
+let currentChartType = 'pie';
+let currentReportKey = serverReportKey || null;
+let selectedQuery = '';
+
+// Pagination variables
+let currentPage = 1;
+let rowsPerPage = 10;
+let allTableData = [];
+
+// Format number helper
+function formatNumber(value, decimals = 0) {
+  if (typeof value !== 'number') return value;
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+// Render pagination controls
+function renderPagination(totalRows) {
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const paginationContainer = document.getElementById('paginationControls');
+  
+  if (!paginationContainer || totalPages <= 1) {
+    if (paginationContainer) paginationContainer.innerHTML = '';
+    return;
+  }
+
+  // Calculate display range
+  const startRow = (currentPage - 1) * rowsPerPage + 1;
+  const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+
+  // Main container
+  let paginationHTML = `
+    <div class=" p-3 mt-4 flex justify-between items-center text-sm text-gray-700 border-t pt-3">
+      
+      <!-- Previous Button -->
+      <button onclick="changePage(${currentPage - 1})"
+        class="px-3 py-1.5 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+        ${currentPage === 1 ? 'disabled' : ''}>
+        ← Previous
+      </button>
+
+      <!-- Page Info + Per Page Selector -->
+      <div class="flex items-center space-x-3">
+        <span>Page ${currentPage} of ${totalPages}</span>
+        <select id="perPageSelect" class="border rounded px-2 py-1 text-sm">
+          <option value="10" ${rowsPerPage === 10 ? 'selected' : ''}>10</option>
+          <option value="25" ${rowsPerPage === 25 ? 'selected' : ''}>25</option>
+          <option value="50" ${rowsPerPage === 50 ? 'selected' : ''}>50</option>
+          <option value="100" ${rowsPerPage === 100 ? 'selected' : ''}>100</option>
+        </select>
+        <span class="text-gray-500">rows per page</span>
+      </div>
+
+      <!-- Next Button -->
+      <button onclick="changePage(${currentPage + 1})"
+        class="px-3 py-1.5 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+        ${currentPage === totalPages ? 'disabled' : ''}>
+        Next →
+      </button>
+    </div>
+
+    <div class="text-xs text-gray-500 mt-2 text-center">
+      Showing ${startRow}-${endRow} of ${totalRows} rows
+    </div>
+  `;
+
+  paginationContainer.innerHTML = paginationHTML;
+
+  // Handle rows-per-page changes
+  document.getElementById('perPageSelect').addEventListener('change', e => {
+    const newPerPage = parseInt(e.target.value);
+    rowsPerPage = newPerPage;
+    currentPage = 1; // Reset to first page
+    renderTable(allTableData);
+  });
+}
+
+// Global function for changing pages
+window.changePage = function (page) {
+  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  renderTable(allTableData);
+};
+
+
+// Change page function (global scope for onclick)
+window.changePage = function(page) {
+  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+  if (page < 1 || page > totalPages) return;
+  
+  currentPage = page;
+  renderTable(allTableData);
+}
+
+// Render table with pagination and alternating row colors
+function renderTable(data) {
+  if (!data || data.length === 0) {
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
+    document.getElementById('tableHead').innerHTML = '';
+    if (document.getElementById('rowsCount')) {
+      document.getElementById('rowsCount').textContent = '';
+    }
+    const paginationContainer = document.getElementById('paginationControls');
+    if (paginationContainer) paginationContainer.innerHTML = '';
+    return;
+  }
+
+  // Store all data for pagination
+  allTableData = data;
+  
+  const headers = Object.keys(data[0]);
+
+  // Render table header
+  const headerHTML = headers.map(col =>
+    `<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300 bg-gray-700 text-white">${col.replace(/_/g, ' ')}</th>`
+  ).join('');
+  document.getElementById('tableHead').innerHTML = `<tr>${headerHTML}</tr>`;
+
+  // Calculate pagination
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+  const paginatedData = data.slice(startIndex, endIndex);
+
+  // Render table body with alternating row colors
+  const rowsHTML = paginatedData.map((row, index) => {
+    const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+    const cells = headers.map(key => {
+      let val = row[key];
+      if (typeof val === 'number') {
+        val = formatNumber(val, val % 1 ? 2 : 0);
+      }
+      return `<td class="px-4 py-3 text-sm border border-gray-300 text-gray-700">${val ?? ''}</td>`;
+    }).join('');
+    return `<tr class="hover:bg-gray-100 ${rowClass}">${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tableBody').innerHTML = rowsHTML;
+  
+  if (document.getElementById('rowsCount'))
+    document.getElementById('rowsCount').textContent = `${data.length} rows`;
+  
+  // Render pagination
+  renderPagination(data.length);
+}
+
+// Render chart - IMPROVED to handle AI queries
+function renderChart(data, reportKey, chartType = 'pie') {
+  console.log("chartdata", data);
+  if (!data || data.length === 0) {
+    showChartMessage('No data available to create chart.');
+    return;
+  }
+
+  const canvas = document.getElementById('dataChart');
+  if (!canvas) {
+    console.warn('Chart canvas not found.');
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  if (currentChart) {
+    currentChart.destroy();
+  }
+
+  let labels = [];
+  let values = [];
+  let chartTitle = '';
+  let valueLabel = '';
+
+  // --- GENERIC CHART LOGIC for AI queries ---
+  const keys = Object.keys(data[0]);
+  if (keys.length >= 2) {
+    labels = data.map(row => row[keys[0]]);
+    values = data.map(row => {
+      const val = row[keys[1]];
+      return typeof val === 'number' ? val : 0;
+    });
+    valueLabel = keys[1].replace(/_/g, ' ');
+  } else {
+    showChartMessage('Not enough columns to create a chart.');
+    return;
+  }
+
+  // --- If all values are zero or invalid, also skip ---
+  if (values.every(v => v === 0)) {
+    showChartMessage('Chart cannot be created because all values are zero or invalid.');
+    return;
+  }
+
+  // --- Chart colors and config ---
+  const colors = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#059669', '#0891b2'];
+
+  const chartConfig = {
+    type: chartType,
+    data: {
+      labels,
+      datasets: [{
+        label: valueLabel,
+        data: values,
+        backgroundColor: chartType === 'line' ? 'rgba(220, 38, 38, 0.1)' : colors,
+        borderColor: chartType === 'line' ? '#dc2626' : '#ffffff',
+        borderWidth: 2,
+        fill: chartType === 'line',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: chartType === 'pie',
+          position: 'right'
+        },
+        title: {
+          display: true,
+          text: chartTitle,
+          font: { size: 16, weight: 'bold' },
+          padding: 20
+        }
+      },
+      scales: chartType !== 'pie' ? {
+        y: { beginAtZero: true }
+      } : undefined
+    }
+  };
+
+  currentChart = new Chart(ctx, chartConfig);
+  currentChartType = chartType;
+}
+
+// Helper function to show fallback message
+function showChartMessage(message) {
+  const container = document.getElementById('chartContainer') || document.body;
+  const msgElement = document.createElement('div');
+  msgElement.textContent = message;
+  msgElement.style.textAlign = 'center';
+  msgElement.style.color = '#6b7280';
+  msgElement.style.padding = '2rem';
+  msgElement.style.fontStyle = 'italic';
+  msgElement.style.fontSize = '1rem';
+
+  const canvas = document.getElementById('dataChart');
+  if (canvas && canvas.parentNode) {
+    canvas.parentNode.replaceChild(msgElement, canvas);
+  } else {
+    container.appendChild(msgElement);
+  }
+}
+
+
+// Load report - submit SQL to backend
+function loadReport(reportKey) {
+  currentReportKey = reportKey;
+  
+  // Store report key in sessionStorage to persist across page reload
+  sessionStorage.setItem('currentReportKey', reportKey);
+
+  const reportTitle = TITLES[reportKey] || 'Report';
+  document.getElementById('active-report-title').textContent = reportTitle;
+  localStorage.setItem('activeReportTitle', reportTitle);
+
+  // Generate SQL for this report
+  const audience = 'all';
+  const N = 100;
+  const start = null;
+  const end = null;
+  const fn = SQLS[reportKey];
+
+const AvoidAlert = ['refunds', 'payments-by-method', 'revenue-by-franchise', 'top-items', 'daily-sales'];
+
+          if (!fn && !AvoidAlert.includes(Key)) {
+            alert('SQL template not available for this report');
+            return;
+          }
+
+  const sql = fn({
+    audience,
+    N,
+    start,
+    end
+  });
+
+  // Submit form to backend to execute SQL
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/reports/run';
+
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]');
+  if (csrfToken) {
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = csrfToken.content;
+    form.appendChild(csrfInput);
+  }
+
+  const sqlInput = document.createElement('input');
+  sqlInput.type = 'hidden';
+  sqlInput.name = 'sql';
+  sqlInput.value = sql;
+  form.appendChild(sqlInput);
+
+  const reportKeyInput = document.createElement('input');
+  reportKeyInput.type = 'hidden';
+  reportKeyInput.name = 'report_key';
+  reportKeyInput.value = reportKey;
+  form.appendChild(reportKeyInput);
+
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => hidePageLoader(), 10000);
+}
+
+// Search functionality
+document.getElementById('report-search').addEventListener('input', (e) => {
+  const searchTerm = e.target.value.toLowerCase().trim();
+
+  const sectionHeaders = document.querySelectorAll('.section-header');
+  const reportButtons = document.querySelectorAll('.rep-btn');
+
+  // 🔹 If search term is empty → show section headers again
+  if (searchTerm === '') {
+    sectionHeaders.forEach(el => el.style.display = '');
+  } else {
+    sectionHeaders.forEach(el => el.style.display = 'none');
+  }
+
+  // 🔹 Filter report buttons
+  reportButtons.forEach(btn => {
+    const text = btn.textContent.toLowerCase();
+    const listItem = btn.closest('li');
+
+    if (text.includes(searchTerm) || searchTerm === '') {
+      listItem.style.display = '';
+    } else {
+      listItem.style.display = 'none';
+    }
+  });
+});
+
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('border-red-600', 'text-red-600', 'active');
+      b.classList.add('border-transparent', 'text-gray-600');
+    });
+
+    this.classList.remove('border-transparent', 'text-gray-600');
+    this.classList.add('border-red-600', 'text-red-600', 'active');
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.add('hidden');
+    });
+
+    document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+    lucide.createIcons();
+  });
+});
+
+// Report buttons
+document.querySelectorAll('.rep-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+      event.preventDefault();
+    loadReport(this.dataset.report);
+  });
+});
+
+// Chart type switching
+document.querySelectorAll('.chart-type-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.chart-type-btn').forEach(b => {
+      b.classList.remove('active', 'bg-gray-200');
+      b.classList.add('bg-gray-100');
+    });
+
+    this.classList.add('active', 'bg-gray-200');
+    this.classList.remove('bg-gray-100');
+
+    if (currentData.length > 0) {
+      renderChart(currentData, currentReportKey, this.dataset.chartType);
+    }
+
+    lucide.createIcons();
+  });
+});
+
+// Query chip buttons - auto-fill and submit form
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    const query = this.textContent.trim();
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    
+    if (chatInput && chatForm) {
+      chatInput.value = query;
+      chatForm.submit();
+    }
+  });
+});
+
+// Popular query pills - FIXED
+let selectedPopularQuery = '';
+document.querySelectorAll('.popular-query-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.popular-query-pill').forEach(p => {
+      p.classList.remove('bg-gray-800', 'text-white');
+      p.classList.add('bg-gray-100', 'text-gray-700');
+    });
+
+    this.classList.remove('bg-gray-100', 'text-gray-700');
+    this.classList.add('bg-gray-800', 'text-white');
+    selectedPopularQuery = this.dataset.query;
+    
+    // Auto-fill the chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.value = selectedPopularQuery;
+    }
+  });
+});
+
+// Remove the runPopularQuery button listener if it exists
+const runPopularBtn = document.getElementById('runPopularQuery');
+if (runPopularBtn) {
+  runPopularBtn.addEventListener('click', function() {
+    if (!selectedPopularQuery) {
+      alert('Please select a query first');
+      return;
+    }
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    if (chatInput && chatForm) {
+      chatInput.value = selectedPopularQuery;
+      chatForm.submit();
+    }
+  });
+}
+
+// Last query pills - FIXED
+let selectedLastQuery = '';
+document.querySelectorAll('.last-query-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.last-query-pill').forEach(p => {
+      p.classList.remove('bg-gray-800', 'text-white');
+      p.classList.add('bg-gray-100', 'text-gray-700');
+    });
+
+    this.classList.remove('bg-gray-100', 'text-gray-700');
+    this.classList.add('bg-gray-800', 'text-white');
+    selectedLastQuery = this.dataset.query;
+    
+    // Auto-fill the chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.value = selectedLastQuery;
+    }
+  });
+});
+
+// Remove the runLastQuery button listener if it exists
+const runLastBtn = document.getElementById('runLastQuery');
+if (runLastBtn) {
+  runLastBtn.addEventListener('click', function() {
+    if (!selectedLastQuery) {
+      alert('Please select a query first');
+      return;
+    }
+    const chatInput = document.getElementById('chatInput');
+    const chatForm = document.getElementById('chatForm');
+    if (chatInput && chatForm) {
+      chatInput.value = selectedLastQuery;
+      chatForm.submit();
+    }
+  });
+}
+
+function showPageLoader() {
+
+  const loader = document.createElement('div');
+  loader.id = 'page-loader';
+  loader.innerHTML = `
+    <div style="
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #16a34a;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 1s linear infinite;
+      "></div>
+    </div>
+  `;
+
+  // Add CSS animation keyframes if not already added
+  if (!document.getElementById('loader-style')) {
+    const style = document.createElement('style');
+    style.id = 'loader-style';
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(loader);
+}
+
+function hidePageLoader() {
+  const loader = document.getElementById('page-loader');
+  if (loader) loader.remove();
+}
+document.getElementById('chatForm').addEventListener('submit', function () {
+  showPageLoader(); // 🔹 Show your existing page loader
+});
+
+
+// Initialize page with server data if available
+if (serverData && serverData.length > 0) {
+  currentData = serverData;
+  renderTable(serverData);
+  // Render chart for any data (not just specific report keys)
+  renderChart(serverData, serverReportKey, currentChartType);
+}
+  function exportTableToCSV(filename) {
+    const rows = document.querySelectorAll("#dataTable tr");
+    if (!rows.length) return alert("No data to export.");
+    const csv = [];
+    rows.forEach(row => {
+      const cols = row.querySelectorAll("th, td");
+      const rowData = Array.from(cols)
+        .map(col => `"${col.innerText.replace(/"/g, '""')}"`)
+        .join(",");
+      csv.push(rowData);
+    });
+    const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  }
+  // Toggle SQL visibility
+    $('#toggleSql').addEventListener('click', () => {
+      const container = $('#sqlContainer');
+      const icon = $('#toggleSql i');
+      
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        container.classList.add('hidden');
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    });
+
+
+  // Bind export buttons
+  document.getElementById("exportCSV").addEventListener("click", () => exportTableToCSV("report.csv"));
+  
+
+  </script>
+</body>
+
+</html>

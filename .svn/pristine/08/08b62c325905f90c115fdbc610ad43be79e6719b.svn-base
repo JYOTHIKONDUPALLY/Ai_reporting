@@ -1,0 +1,71 @@
+{
+  "title": "Classes & Training Dashboard",
+  "description": "Class enrollment, popularity, and training program analytics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "classes_summary",
+      "title": "Classes Overview",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT iid.item_name) as total_classes, SUM(iid.quantity) as total_seats_sold, COUNT(DISTINCT id.id) as total_bookings, SUM(iid.total_price) as total_revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'class'",
+      "config": {
+        "metrics": [
+          {"label": "Total Classes", "field": "total_classes", "format": "number"},
+          {"label": "Seats Sold", "field": "total_seats_sold", "format": "number"},
+          {"label": "Total Bookings", "field": "total_bookings", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"}
+        ]
+      }
+    },
+    {
+      "id": "popular_classes",
+      "title": "Most Popular Classes",
+      "type": "bar",
+      "sql": "SELECT iid.item_name as class_name, SUM(iid.quantity) as seats_sold, COUNT(DISTINCT id.id) as booking_count FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'class' GROUP BY class_name ORDER BY seats_sold DESC LIMIT 15",
+      "config": {
+        "xAxis": "class_name",
+        "yAxis": "seats_sold"
+      }
+    },
+    {
+      "id": "class_enrollment_trend",
+      "title": "Class Enrollment Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, SUM(iid.quantity) as seats_sold, COUNT(DISTINCT id.id) as bookings FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'class' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "seats_sold",
+        "secondaryAxis": "bookings"
+      }
+    },
+    {
+      "id": "classes_new_customers",
+      "title": "Classes Bringing New Customers",
+      "type": "table",
+      "sql": "WITH first_dt AS (SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id) SELECT iid.item_name AS class_name, COUNT(*) AS new_customers FROM first_dt ft INNER JOIN invoice_details id ON id.customer_id = ft.customer_id AND id.invoice_date = ft.first_date INNER JOIN invoice_items_detail iid ON iid.invoice_id = id.id WHERE iid.item_type = 'class' GROUP BY class_name ORDER BY new_customers DESC LIMIT 20",
+      "config": {
+        "columns": ["class_name", "new_customers"]
+      }
+    },
+    {
+      "id": "top_class_spenders",
+      "title": "Top Class Spenders",
+      "type": "table",
+      "sql": "SELECT id.customer_name, SUM(iid.total_price) AS class_spend, COUNT(DISTINCT id.id) AS booking_count, SUM(iid.quantity) as total_seats FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'class' GROUP BY id.customer_name ORDER BY class_spend DESC LIMIT 50",
+      "config": {
+        "columns": ["customer_name", "class_spend", "booking_count", "total_seats"]
+      }
+    },
+    {
+      "id": "class_revenue_by_type",
+      "title": "Revenue by Class Type",
+      "type": "pie",
+      "sql": "SELECT iid.category, SUM(iid.total_price) as revenue, SUM(iid.quantity) as seats FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'class' GROUP BY iid.category ORDER BY revenue DESC",
+      "config": {
+        "labelField": "category",
+        "valueField": "revenue"
+      }
+    }
+  ]
+}
+

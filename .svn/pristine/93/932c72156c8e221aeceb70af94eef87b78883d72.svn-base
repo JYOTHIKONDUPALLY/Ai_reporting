@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Services;
+
+use OpenAI\Laravel\Facades\OpenAI;
+
+class AiSqlService
+{
+    public function generateSql(string $question): string
+    {
+        $schema = \App\Services\SchemaDictionary::get();
+
+        $prompt = <<<EOT
+You are a SQL assistant. Generate a ClickHouse SQL query based on the schema below.
+Only return valid SQL. Do not add explanations.
+
+Schema:
+$schema
+
+Question: $question
+SQL:
+EOT;
+
+        $response = OpenAI::chat()->create([
+            'model' => 'gpt-4o-mini', // you can change to gpt-4o or o1-preview
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a helpful SQL generator.'],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+        ]);
+
+$sql = $response->choices[0]->message->content ?? '';
+
+// Remove Markdown code fences (```sql ... ```)
+$sql = preg_replace('/```(sql)?/i', '', $sql);
+$sql = str_replace('```', '', $sql);
+
+// Trim whitespace
+$sql = trim($sql);
+
+
+
+        return $sql;
+    }
+}
+

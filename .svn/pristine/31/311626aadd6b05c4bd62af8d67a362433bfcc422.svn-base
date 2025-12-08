@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Services;
+
+use OpenAI\Laravel\Facades\OpenAI;
+
+class AiSqlService
+{
+    public function generateSql(string $question): string
+    {
+        $schema = \App\Services\SchemaDictionary::get();
+
+
+        $system = <<<SYS
+You are a senior analytics SQL assistant for ClickHouse.
+Return ONLY valid SQL (no code fences, no commentary).
+
+Normalization rules (very important):
+- "product|products"      -> iid.item_type = 'product'
+- "service|services|appointment"      -> iid.item_type = 'service'
+- "class|classes"         -> iid.item_type = 'class'
+- "package|packages"      -> iid.item_type = 'package'
+- "membership|memberships"-> iid.item_type = 'membership'
+Always implement with: lowerUTF8(iid.item_type) = '<canonical>'.
+
+If user says "total X sold ...", compute SUM(iid.quantity) as units_sold.
+Optionally include SUM(iid.total_price) as gross_sales if user mentions revenue/sales.
+
+Schema:
+{$schema}
+SYS;
+
+
+
+
+        $prompt = <<<EOT
+You are a SQL assistant. Generate a ClickHouse SQL query based on the schema below.
+Only return valid SQL. Do not add explanations.
+
+Schema:
+$schema
+
+Question: $question
+SQL:
+EOT;
+
+        $response = OpenAI::chat()->create([
+            'model' => 'gpt-4o-mini', // you can change to gpt-4o or o1-preview
+            'messages' => [
+                ['role' => 'system', 'content' => $system],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+        ]);
+
+$sql = $response->choices[0]->message->content ?? '';
+
+// Remove Markdown code fences (```sql ... ```)
+$sql = preg_replace('/```(sql)?/i', '', $sql);
+$sql = str_replace('```', '', $sql);
+
+// Trim whitespace
+$sql = trim($sql);
+
+
+
+        return $sql;
+    }
+}
+

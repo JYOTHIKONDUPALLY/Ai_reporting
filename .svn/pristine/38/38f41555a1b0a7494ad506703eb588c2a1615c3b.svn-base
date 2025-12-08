@@ -1,0 +1,61 @@
+{
+  "title": "Memberships",
+  "description": "Comprehensive overview of membership metrics, sales, and performance",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "membership_sales_summary",
+      "title": "Membership Sales Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT id.id) as total_sales, SUM(iid.total_price) as total_revenue, COUNT(DISTINCT id.customer_id) as unique_customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership'",
+      "config": {
+        "metrics": [
+          {"label": "Total Sales", "field": "total_sales", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Unique Customers", "field": "unique_customers", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "membership_sales_trend",
+      "title": "Membership Sales Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, SUM(iid.total_price) as revenue, COUNT(DISTINCT id.id) as sales_count FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "revenue",
+        "secondaryAxis": "sales_count"
+      }
+    },
+    {
+      "id": "top_memberships",
+      "title": "Top Membership Types",
+      "type": "bar",
+      "sql": "SELECT TRIM(iid.item_name) as membership_name, COUNT(DISTINCT id.id) as transaction_count, SUM(iid.total_price) as total_sales FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY membership_name ORDER BY total_sales DESC LIMIT 10",
+      "config": {
+        "xAxis": "membership_name",
+        "yAxis": "total_sales"
+      }
+    },
+    {
+      "id": "membership_by_category",
+      "title": "Memberships by Category",
+      "type": "pie",
+      "sql": "SELECT iid.category, SUM(iid.total_price) as total_sales, COUNT(DISTINCT id.id) as count FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' GROUP BY iid.category ORDER BY total_sales DESC",
+      "config": {
+        "labelField": "category",
+        "valueField": "total_sales"
+      }
+    },
+    {
+      "id": "membership_transactions",
+      "title": "Recent Membership Transactions",
+      "type": "table",
+      "sql": "SELECT id.invoice_date, id.customer_name, TRIM(iid.item_name) as membership_name, iid.total_price, id.franchise FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'membership' ORDER BY id.invoice_date DESC LIMIT 50",
+      "config": {
+        "columns": ["invoice_date", "customer_name", "membership_name", "total_price", "franchise"]
+      }
+    }
+  ]
+}
+

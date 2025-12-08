@@ -1,0 +1,133 @@
+{
+  "title": "Financial & Revenue",
+  "description": "Comprehensive financial overview, revenue analysis, and payment insights",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "revenue_summary",
+      "title": "Revenue Summary",
+      "type": "metric",
+      "sql": "SELECT SUM(total_amount) as total_revenue, COUNT(DISTINCT id) as total_transactions, AVG(total_amount) as avg_transaction, COUNT(DISTINCT customer_id) as unique_customers FROM invoice_details",
+      "config": {
+        "metrics": [
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Total Transactions", "field": "total_transactions", "format": "number"},
+          {"label": "Avg Transaction", "field": "avg_transaction", "format": "currency"},
+          {"label": "Unique Customers", "field": "unique_customers", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "revenue_trend",
+      "title": "Revenue Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(invoice_date), '%Y-%m') as month, SUM(total_amount) as revenue, COUNT(DISTINCT id) as transactions FROM invoice_details GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "revenue",
+        "secondaryAxis": "transactions"
+      }
+    },
+    {
+      "id": "revenue_by_franchise",
+      "title": "Revenue by Franchise",
+      "type": "bar",
+      "sql": "SELECT franchise, SUM(total_amount) as total_revenue, COUNT(DISTINCT id) as transactions FROM invoice_details GROUP BY franchise ORDER BY total_revenue DESC",
+      "config": {
+        "xAxis": "franchise",
+        "yAxis": "total_revenue"
+      }
+    },
+    {
+      "id": "payment_methods",
+      "title": "Payment Methods Distribution",
+      "type": "pie",
+      "sql": "SELECT payment_method, COUNT(*) as transaction_count, SUM(amount_paid) as total_collected FROM paymentDetails GROUP BY payment_method ORDER BY total_collected DESC",
+      "config": {
+        "labelField": "payment_method",
+        "valueField": "total_collected"
+      }
+    },
+    {
+      "id": "daily_revenue",
+      "title": "Daily Revenue",
+      "type": "line",
+      "sql": "SELECT invoice_date, SUM(total_amount) as daily_revenue, COUNT(DISTINCT id) as daily_transactions FROM invoice_details GROUP BY invoice_date ORDER BY invoice_date DESC LIMIT 30",
+      "config": {
+        "xAxis": "invoice_date",
+        "yAxis": "daily_revenue"
+      }
+    },
+    {
+      "id": "revenue_by_item_type",
+      "title": "Revenue by Item Type",
+      "type": "pie",
+      "sql": "SELECT iid.item_type, SUM(iid.total_price) as revenue, COUNT(DISTINCT id.id) as transactions FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id GROUP BY iid.item_type ORDER BY revenue DESC",
+      "config": {
+        "labelField": "item_type",
+        "valueField": "revenue"
+      }
+    },
+    {
+      "id": "refunds_summary",
+      "title": "Refunds Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(*) as refund_count, SUM(refund_amount) as total_refunds, SUM(refund_tax) as total_refund_tax FROM invoice_items_detail WHERE refund_amount > 0",
+      "config": {
+        "metrics": [
+          {"label": "Refund Count", "field": "refund_count", "format": "number"},
+          {"label": "Total Refunds", "field": "total_refunds", "format": "currency"},
+          {"label": "Refund Tax", "field": "total_refund_tax", "format": "currency"}
+        ]
+      }
+    },
+    {
+      "id": "top_refunds",
+      "title": "Top Refunds",
+      "type": "table",
+      "sql": "SELECT invoice_id, item_name, refund_amount, refund_tax FROM invoice_items_detail WHERE refund_amount > 0 ORDER BY refund_amount DESC LIMIT 50",
+      "config": {
+        "columns": ["invoice_id", "item_name", "refund_amount", "refund_tax"]
+      }
+    },{
+      "id": "Total Revenue (Range + Retail + Classes + Memberships)",
+      "title": "Total Revenue (Range + Retail + Classes + Memberships)",
+      "type": "metric",
+      "sql": "WITH retail AS (    SELECT SUM(total_price) AS retail_revenue    FROM invoice_items_detail    WHERE item_type = 'product'),membership AS (    SELECT SUM(total_price) AS membership_revenue    FROM invoice_items_detail    WHERE item_type = 'membership'),classes AS (     SELECT SUM(total_price) AS class_revenue    FROM invoice_items_detail    WHERE item_type = 'class'),range_revenue AS (    (SELECT SUM(iid.total_price) as range_revenue     FROM invoice_items_detail iid     INNER JOIN product_inventory p ON iid.item_id = p.id     WHERE p.productSerialization = 1)  )SELECT    retail_revenue,    membership_revenue,    class_revenue,    range_revenue,    retail_revenue + membership_revenue + class_revenue + range_revenue AS total_revenue FROM retail CROSS JOIN membership CROSS JOIN classes CROSS JOIN range_revenue;",
+      "config": {
+        "metrics": [
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"},
+          {"label": "Retail Revenue", "field": "retail_revenue", "format": "currency"},
+          {"label": "Membership Revenue", "field": "membership_revenue", "format": "currency"},
+          {"label": "Class Revenue", "field": "class_revenue", "format": "currency"},
+          {"label": "Range Revenue", "field": "range_revenue", "format": "currency"}
+        ]
+      }
+    },{
+      "id": "Average Revenue per Customer",
+      "title": "Average Revenue per Customer",
+      "type": "table",
+      "sql": "SELECT customer_name,    AVG(customer_total) AS avg_revenue_per_customer FROM (    SELECT         customer_id,        customer_name,        SUM(total_amount) AS customer_total    FROM invoice_details    GROUP BY customer_id , customer_name ) GROUP BY  customer_name order by  avg_revenue_per_customer desc",
+      "config": {
+        "columns": ["customer_name", "avg_revenue_per_customer"]
+      }
+    },{
+      "id": "Conversion Rate (walk-in → purchase)",
+      "title": "Conversion Rate (walk-in → purchase)",
+      "type": "table",
+      "sql": "WITH    total_walkins AS (        SELECT count() AS cnt        FROM invoice_details        WHERE booking_type = 'walk_in'    ),    converted_walkins AS (        SELECT count() AS cnt        FROM invoice_details        WHERE booking_type = 'walk_in'          AND total_amount > 0          AND status ='1'    )SELECT    (SELECT cnt FROM converted_walkins) AS walkin_purchases,    (SELECT cnt FROM total_walkins) AS total_walkins,    round(        (walkin_purchases / total_walkins) * 100, 2    ) AS conversion_rate_percentage;",
+      "config": {
+        "columns": ["walkin_purchases", "total_walkins", "conversion_rate_percentage"]
+      }
+    },{
+      "id": "Refund Rate",
+      "title": "Refund Rate",
+      "type": "table",
+      "sql": "SELECT    COUNT(DISTINCT CASE WHEN p.refund_amount > 0 THEN i.id END) AS refunded_invoices,    COUNT(DISTINCT i.id) AS total_invoices,    (refunded_invoices / total_invoices) * 100 AS refund_rate_percent FROM invoice_details i INNER JOIN paymentDetails p    ON i.id = p.invoice_id;",
+      "config": {
+        "columns": ["refunded_invoices", "total_invoices", "refund_rate_percent"]
+      }
+    }
+  ]
+}
+

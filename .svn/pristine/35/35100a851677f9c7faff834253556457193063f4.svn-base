@@ -1,0 +1,71 @@
+{
+  "title": "Range Usage Dashboard",
+  "description": "Gun range utilization, peak times, and service analytics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "range_usage_summary",
+      "title": "Range Usage Summary",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT id.id) as total_sessions, COUNT(DISTINCT id.customer_id) as unique_customers, SUM(iid.total_price) as total_revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction'",
+      "config": {
+        "metrics": [
+          {"label": "Total Sessions", "field": "total_sessions", "format": "number"},
+          {"label": "Unique Customers", "field": "unique_customers", "format": "number"},
+          {"label": "Total Revenue", "field": "total_revenue", "format": "currency"}
+        ]
+      }
+    },
+    {
+      "id": "busiest_months",
+      "title": "Busiest Months",
+      "type": "bar",
+      "sql": "SELECT formatDateTime(id.invoice_date, '%Y-%m') as month, countDistinct(id.customer_id) as customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY month ORDER BY customers DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "customers"
+      }
+    },
+    {
+      "id": "busiest_days",
+      "title": "Busiest Days of Week",
+      "type": "bar",
+      "sql": "SELECT formatDateTime(id.invoice_date, '%A') as day_of_week, countDistinct(id.customer_id) as customers, COUNT(DISTINCT id.id) as sessions FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY day_of_week ORDER BY customers DESC",
+      "config": {
+        "xAxis": "day_of_week",
+        "yAxis": "customers"
+      }
+    },
+    {
+      "id": "range_usage_trend",
+      "title": "Range Usage Trend",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(id.invoice_date), '%Y-%m') as month, COUNT(DISTINCT id.id) as sessions, COUNT(DISTINCT id.customer_id) as customers FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "sessions",
+        "secondaryAxis": "customers"
+      }
+    },
+    {
+      "id": "range_services",
+      "title": "Range Services Breakdown",
+      "type": "pie",
+      "sql": "SELECT iid.item_name, COUNT(DISTINCT id.id) as session_count, SUM(iid.total_price) as revenue FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' GROUP BY iid.item_name ORDER BY revenue DESC",
+      "config": {
+        "labelField": "item_name",
+        "valueField": "revenue"
+      }
+    },
+    {
+      "id": "range_transactions",
+      "title": "Recent Range Transactions",
+      "type": "table",
+      "sql": "SELECT id.invoice_date, id.customer_name, iid.item_name, iid.total_price, id.franchise FROM invoice_details id INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id WHERE iid.item_type = 'service' AND iid.category = 'Gun Ranges & Instruction' ORDER BY id.invoice_date DESC LIMIT 50",
+      "config": {
+        "columns": ["invoice_date", "customer_name", "item_name", "total_price", "franchise"]
+      }
+    }
+  ]
+}
+

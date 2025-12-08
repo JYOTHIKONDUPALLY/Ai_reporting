@@ -1,0 +1,271 @@
+{
+  "title": "Customers",
+  "description": "Customer insights, behavior analysis, and engagement metrics",
+  "layout": "grid",
+  "widgets": [
+    {
+      "id": "customer_summary",
+      "title": "Customer Overview",
+      "type": "metric",
+      "sql": "SELECT COUNT(DISTINCT customer_id) as total_customers, COUNT(DISTINCT CASE WHEN is_member = 1 THEN customer_id END) as members, COUNT(DISTINCT CASE WHEN is_member = 0 THEN customer_id END) as non_members FROM invoice_details",
+      "config": {
+        "metrics": [
+          {"label": "Total Customers", "field": "total_customers", "format": "number"},
+          {"label": "Members", "field": "members", "format": "number"},
+          {"label": "Non-Members", "field": "non_members", "format": "number"}
+        ]
+      }
+    },
+    {
+      "id": "top_customers",
+      "title": "Top Spending Customers",
+      "type": "bar",
+      "sql": "SELECT customer_name, SUM(total_amount) as total_spent, COUNT(DISTINCT id) as transaction_count FROM invoice_details GROUP BY customer_id, customer_name ORDER BY total_spent DESC LIMIT 2087",
+      "config": {
+        "xAxis": "customer_name",
+        "yAxis": "total_spent"
+      }
+    },
+    {
+      "id": "customer_acquisition",
+      "title": "New Customer Acquisition",
+      "type": "line",
+      "sql": "SELECT formatDateTime(toStartOfMonth(first_purchase_date), '%Y-%m') as month, COUNT(*) as new_customers FROM (SELECT customer_id, MIN(invoice_date) as first_purchase_date FROM invoice_details GROUP BY customer_id) GROUP BY month ORDER BY month DESC LIMIT 12",
+      "config": {
+        "xAxis": "month",
+        "yAxis": "new_customers"
+      }
+    },
+    {
+      "id": "member_vs_nonmember",
+      "title": "Members vs Non-Members",
+      "type": "pie",
+      "sql": "SELECT CASE WHEN is_member = 1 THEN 'Members' ELSE 'Non-Members' END as customer_type, COUNT(DISTINCT customer_id) as count, SUM(total_amount) as total_spent FROM invoice_details GROUP BY is_member",
+      "config": {
+        "labelField": "customer_type",
+        "valueField": "count"
+      }
+    },
+    {
+      "id": "customer_list",
+      "title": "Customer List",
+      "type": "table",
+      "sql": "SELECT customer_name, CASE WHEN is_member = 1 THEN 'Yes' ELSE 'No' END as is_member, COUNT(DISTINCT id) as transaction_count, SUM(total_amount) as total_spent, MAX(invoice_date) as last_purchase FROM invoice_details GROUP BY customer_id, customer_name, is_member ORDER BY total_spent DESC LIMIT 100",
+      "config": {
+        "columns": ["customer_name", "is_member", "transaction_count", "total_spent", "last_purchase"]
+      }
+    },
+    {
+      "id": "repeat_customers",
+      "title": "Repeat Purchase Behavior",
+      "type": "table",
+      "sql": "SELECT customer_id, customer_name, COUNT(DISTINCT id) as purchase_count, SUM(total_amount) as total_spent, MIN(invoice_date) as first_purchase, MAX(invoice_date) as last_purchase FROM invoice_details GROUP BY customer_id, customer_name HAVING purchase_count > 1 ORDER BY purchase_count DESC LIMIT 50",
+      "config": {
+        "columns": ["customer_name", "purchase_count", "total_spent", "first_purchase", "last_purchase"]
+      }
+    }, {
+      "id": "member_vs_nonmember",
+      "title": "Members vs Non-Members",
+      "type": "table",
+      "sql": "SELECT    IF(c.IsMember = 'Yes', 'Member', 'Non-Member') AS customer_type,    COUNT(DISTINCT o.id) AS total_orders,    SUM(oi.total_price) AS total_spent,    AVG(oi.total_price) AS avg_spent_per_item,    SUM(oi.quantity) AS total_units FROM invoice_details AS o INNER JOIN invoice_items_detail AS oi     ON oi.invoice_id = o.id INNER JOIN customers AS c    ON c.id = o.customer_id WHERE o.status = '1'GROUP BY customer_type ORDER BY total_spent DESC;",
+      "config": {
+        "columns": ["customer_type", "total_orders", "total_spent", "avg_spent_per_item", "total_units"]
+      }
+    },
+    
+    
+    
+    {
+      "id": "Top 10 Spending Members (Lifetime)",
+      "title": "Top 10 Spending Members (Lifetime)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id   where  c.IsMember ='Yes' and  o.status = '1'GROUP BY c.CustomerName, c.IsMember ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },{
+      "id": "Top 10 Spending Members (YTD)",
+      "title": "Top 10 Spending Members (YTD)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id WHERE c.IsMember = 'Yes'  AND o.status = '1'  AND o.created_at >= toStartOfYear(today()) GROUP BY c.CustomerName ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },{
+      "id": "Top 10 Spending Members (Current Month)",
+      "title": "Top 10 Spending Members (Current Month)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id WHERE c.IsMember = 'Yes'  AND o.status = '1'  AND o.created_at >= toStartOfMonth(today()) GROUP BY c.CustomerName ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },{
+      "id": "Top 10 Spending Non-Members (Lifetime)",
+      "title": "Top 10 Spending Non-Members (Lifetime)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id WHERE c.IsMember = 'No'  AND o.status = '1' GROUP BY c.CustomerName ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },
+    {
+      "id": "Top 10 Spending Non-Members (YTD)",
+      "title": "Top 10 Spending Non-Members (YTD)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id WHERE c.IsMember = 'No'  AND o.status = '1'  AND o.created_at >= toStartOfYear(today()) GROUP BY c.CustomerName ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },{
+      "id": "Top 10 Spending Non-Members (Current Month)",
+      "title": "Top 10 Spending Non-Members (Current Month)",
+      "type": "table",
+      "sql": "SELECT    c.CustomerName,    SUM(o.total_amount) AS total_spent FROM invoice_details o JOIN customers c ON c.id = o.customer_id WHERE c.IsMember != 'No'   AND o.status = '1'   AND o.created_at >= toStartOfMonth(today()) GROUP BY c.CustomerName ORDER BY total_spent DESC LIMIT 10;",
+      "config": {
+        "columns": ["CustomerName", "total_spent"]
+      }
+    },
+    {
+      "id": "Top 10 Members – Product Purchases Only)",
+      "title": "Top 10 Members – Product Purchases Only",
+      "type": "table",
+      "sql": "SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(oi.total_price) AS total_spent_on_products,    SUM(oi.quantity) AS total_units_purchased,    COUNT(DISTINCT o.id) AS total_orders FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o    ON o.id = oi.invoice_id INNER JOIN customers AS c    ON c.id = o.customer_id WHERE     oi.item_type = 'product'    AND o.status = '1'    AND c.IsMember = 'Yes'  GROUP BY     customer_id, customer_name ORDER BY     total_spent_on_products DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_products", "total_units_purchased", "total_orders"]
+      }
+    },
+    {
+      "id": "Top 10 NON-Members – Product Purchases Only)",
+      "title": "Top 10 NON-Members – Product Purchases Only",
+      "type": "table",
+      "sql": "SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(oi.total_price) AS total_spent_on_products,    SUM(oi.quantity) AS total_units_purchased,    COUNT(DISTINCT o.id) AS total_orders FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o    ON o.id = oi.invoice_id INNER JOIN customers AS c    ON c.id = o.customer_id WHERE     oi.item_type = 'product'    AND o.status = '1'    AND c.IsMember = 'No'  GROUP BY     customer_id, customer_name ORDER BY     total_spent_on_products DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_products", "total_units_purchased", "total_orders"]
+      }
+    },
+    {
+      "id": "Top 10 Members – Classes Purchases Only)",
+      "title": "Top 10 Members – Classes Purchases Only",
+      "type": "table",
+      "sql": "SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(oi.total_price) AS total_spent_on_classes,    SUM(oi.quantity) AS total_class_units,    COUNT(DISTINCT o.id) AS total_orders FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o    ON o.id = oi.invoice_id INNER JOIN customers AS c    ON c.id = o.customer_id WHERE     oi.item_type = 'class'   AND o.status = '1'         AND c.IsMember = 'Yes'     GROUP BY     customer_id, customer_name ORDER BY     total_spent_on_classes DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_classes", "total_class_units", "total_orders"]
+      }
+    },
+     {
+      "id": "Top 10 non-Members – Classes Purchases Only)",
+      "title": "Top 10 non-Members – Classes Purchases Only",
+      "type": "table",
+      "sql": "SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(oi.total_price) AS total_spent_on_classes,    SUM(oi.quantity) AS total_class_units,    COUNT(DISTINCT o.id) AS total_orders FROM invoice_items_detail AS oi INNER JOIN invoice_details AS o    ON o.id = oi.invoice_id INNER JOIN customers AS c    ON c.id = o.customer_id WHERE     oi.item_type = 'class'   AND o.status = '1'         AND c.IsMember = 'No'     GROUP BY     customer_id, customer_name ORDER BY     total_spent_on_classes DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_classes", "total_class_units", "total_orders"]
+      }
+    },
+    {
+      "id": "Top 10 Range Members-(range packages)",
+      "title": "Top 10 Range Members-(range packages)",
+      "type": "table",
+      "sql": "WITH range_items AS (    SELECT        oi.*     FROM invoice_items_detail oi    INNER JOIN product_inventory pi        ON pi.id = oi.item_id    WHERE pi.productSerialization = 1  )SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(r.total_price) AS total_spent_on_range,    SUM(r.quantity) AS total_range_units,    COUNT(DISTINCT r.invoice_id) AS total_orders FROM range_items r INNER JOIN invoice_details o ON o.id = r.invoice_id INNER JOIN customers c ON c.id = o.customer_id WHERE     o.status = '1'    AND c.IsMember = 'Yes'  GROUP BY     customer_id, customer_name ORDER BY total_spent_on_range DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_range", "total_range_units", "total_orders"]
+      }
+    },{
+      "id": "Top 10 Range NON-Members-(range packages)",
+      "title": "Top 10 Range NON-Members-(range packages)",
+      "type": "table",
+      "sql": "WITH range_items AS (    SELECT        oi.*     FROM invoice_items_detail oi    INNER JOIN product_inventory pi        ON pi.id = oi.item_id    WHERE pi.productSerialization = 1  )SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(r.total_price) AS total_spent_on_range,    SUM(r.quantity) AS total_range_units,    COUNT(DISTINCT r.invoice_id) AS total_orders FROM range_items r INNER JOIN invoice_details o ON o.id = r.invoice_id INNER JOIN customers c ON c.id = o.customer_id WHERE     o.status = '1'    AND c.IsMember = 'No'  GROUP BY     customer_id, customer_name ORDER BY total_spent_on_range DESC LIMIT 10;",
+      "config": {
+        "columns": ["customer_name", "total_spent_on_range", "total_range_units", "total_orders"]
+      }
+    },{
+      "id": "Customer Lifetime Value (CLV) - Range-Only customers",
+      "title": "Customer Lifetime Value (CLV) - Range-Only customers",
+      "type": "table",
+      "sql": "WITH range_items AS (    SELECT        oi.invoice_id,        id.customer_id,        oi.otal_price,        oi.quantity    FROM invoice_items_detail oi    inner join invoice_details id on id.id=oi.invoice_id    INNER JOIN product_inventory pi        ON pi.id = oi.item_id    WHERE pi.productSerialization = 1),non_range_customers AS (    SELECT DISTINCT oi.customer_id    FROM invoice_details oi    inner join invoice_items_detail iid on iid.invoice_id=oi.id INNER JOIN product_inventory pi        ON pi.id = iid.item_id    WHERE pi.productSerialization != 1),range_only_customers AS (    SELECT DISTINCT r.customer_id    FROM range_items r    WHERE r.customer_id NOT IN (SELECT customer_id FROM non_range_customers))SELECT    c.id AS customer_id,    concat(c.FirstName, ' ', c.LastName) AS customer_name,    SUM(r.total_price) AS lifetime_value,    SUM(r.quantity) AS total_units,    COUNT(DISTINCT r.invoice_id) AS total_orders,    toString(MIN(o.created_at)) AS first_purchase_date,    toString(MAX(o.created_at)) AS last_purchase_date FROM range_items r INNER JOIN range_only_customers roc ON roc.customer_id = r.customer_id INNER JOIN customers c ON c.id = r.customer_id INNER JOIN invoice_details o ON o.id = r.invoice_id WHERE o.status = '1' GROUP BY customer_id, customer_name ORDER BY lifetime_value DESC;",
+      "config": {
+        "columns": ["customer_name", "lifetime_value", "total_units", "total_orders", "first_purchase_date", "last_purchase_date"]
+      }
+    },{
+      "id": "Customer Lifetime Value (CLV) - Retail Customers",
+      "title": "Customer Lifetime Value (CLV) - Retail Customers",
+      "type": "table",
+      "sql": "SELECT    o.customer_id,    (o.customer_name) AS customer_name,    SUM(oi.total_price) AS lifetime_value,    SUM(oi.quantity) AS total_units,    COUNT(DISTINCT o.id) AS total_orders,    formatDateTime(MIN(o.created_at), '%d %b %Y') AS first_purchase_date,   formatDateTime( MAX(o.created_at), '%d %b %Y') AS last_purchase_date FROM invoice_details o INNER JOIN invoice_items_detail oi     ON oi.invoice_id = o.id WHERE     o.status = '1'    AND o.booking_type IN ('phone_in', 'walk_in', 'mobile_app') GROUP BY    o.customer_id, customer_name ORDER BY     lifetime_value DESC;",
+      "config": {
+        "columns": ["customer_name", "lifetime_value", "total_units", "total_orders", "first_purchase_date", "last_purchase_date"]
+      }
+    },{
+      "id": "Customer Lifetime Value (CLV) - total_class_revenue",
+      "title": "Customer Lifetime Value (CLV) - total_class_revenue",
+      "type": "table",
+      "sql": "SELECT    o.customer_id,    (o.customer_name) AS customer_name,    SUM(oi.total_price) AS total_class_revenue,    SUM(oi.quantity) AS total_classes_taken,    COUNT(DISTINCT o.id) AS total_class_orders, formatDateTime(MIN(o.created_at), '%d %b %Y') AS first_class_date, formatDateTime(MAX(o.created_at), '%d %b %Y') AS last_class_date FROM invoice_details o INNER JOIN invoice_items_detail oi ON oi.invoice_id = o.id INNER JOIN customers c ON c.id = o.customer_id WHERE  o.status = '1' AND oi.item_type = 'class' GROUP BY     o.customer_id, o.customer_name ORDER BY   total_class_revenue   DESC;    ",
+      "config": {
+        "columns": ["customer_name", "total_class_revenue", "total_classes_taken", "total_class_orders", "first_class_date", "last_class_date"]
+      }
+    },{
+      "id": "Customer Lifetime Value (CLV) - Mixed Customers (range + retail + classes)",
+      "title": "Customer Lifetime Value (CLV) - Mixed Customers (range + retail + classes)",
+      "type": "table",
+      "sql": "WITH item_types AS (    SELECT        oi.invoice_id,        oi.quantity,        oi.total_price,        pi.productSerialization,        CASE             WHEN pi.productSerialization = 1 THEN 'range'            WHEN oi.item_type = 'class' THEN 'class'            WHEN id.booking_type IN ('walk_in', 'phone_in', 'mobile_app') THEN 'retail'        END AS purchase_type    FROM invoice_items_detail oi    LEFT JOIN product_inventory pi ON pi.id = oi.item_id    INNER JOIN invoice_details id ON id.id = oi.invoice_id)SELECT    o.customer_id,    o.customer_name,    SUM(it.total_price) AS total_spent_mixed,    SUMIf(it.total_price, it.purchase_type = 'retail') AS retail_spent,    SUMIf(it.total_price, it.purchase_type = 'range') AS range_spent,    SUMIf(it.total_price, it.purchase_type = 'class') AS class_spent,    COUNT(DISTINCT o.id) AS total_orders,  formatDateTime(MIN(o.created_at), '%d %b %Y') AS first_purchase,    formatDateTime(MAX(o.created_at), '%d %b %Y') AS last_purchase FROM invoice_details o INNER JOIN item_types it ON it.invoice_id = o.id LEFT JOIN customers c ON c.id = o.customer_id WHERE     o.status = '1'GROUP BY     o.customer_id, o.customer_name ORDER BY total_spent_mixed DESC;",
+      "config": {
+        "columns": ["customer_name", "total_spent_mixed", "retail_spent", "range_spent", "class_spent", "total_orders", "first_purchase", "last_purchase"]
+      }
+    },{
+      "id": "New customers (monthly)",
+      "title": "New customers (monthly)",
+      "type": "table",
+      "sql": "SELECT    formatDateTime(toStartOfMonth(created_at), '%b  %Y') AS month,    COUNT(*) AS new_customers FROM customers WHERE created_at IS NOT NULL GROUP BY month ORDER BY month ASC;",
+      "config": {
+        "columns": ["month", "new_customers"]
+      }
+    },{
+      "id": "Returning customers (monthly) ",
+      "title": "Returning customers (monthly)",
+      "type": "table",
+      "sql": "WITH monthly_orders AS (    SELECT        customer_id,        toStartOfMonth(created_at) AS month    FROM invoice_details    WHERE status = '1'      AND customer_id != 0),first_order as (    SELECT        customer_id,        min(month) AS first_month    FROM monthly_orders    GROUP BY customer_id)SELECT    formatDateTime(m.month, '%b %Y') AS month,    COUNT(DISTINCT m.customer_id) AS returning_customers FROM monthly_orders m INNER JOIN first_order f    ON m.customer_id = f.customer_id WHERE m.month > f.first_month  GROUP BY month ORDER BY month;",
+      "config": {
+        "columns": ["month", "returning_customers"]
+      }
+    },{
+      "id": "Membership Analytics - Active Memberships ",
+      "title": "Membership Analytics - Active Memberships",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) AS count,    SUM(recurring_amount) AS otal_recurring_amount,    AVG(recurring_amount) AS avg_price,    MIN(enrollment_date) AS oldest_enrollment,    MAX(enrollment_date) AS newest_enrollment FROM memberships WHERE is_active = 1 GROUP BY membership_type, membership_name ORDER BY count DESC;",
+      "config": {
+        "columns": ["membership_name", "count", "oldest_enrollment", "newest_enrollment"]
+      }
+    },{
+      "id": "Membership Analytics - Expiring Soon (next 30/60 days) ",
+      "title": "Membership Analytics - Expiring Soon (next 30/60 days)",
+      "type": "table",
+      "sql": "SELECT     COUNT(*) as expiring_30_days_count,    SUM(recurring_amount) as potential_revenue_at_risk,    AVG(recurring_amount) as avg_membership_value,    SUM(CASE WHEN auto_renew = 1 THEN 1 ELSE 0 END) as auto_renew_enabled,    SUM(CASE WHEN auto_renew = 0 THEN 1 ELSE 0 END) as manual_action_needed FROM memberships WHERE is_expiring_30days = 1;",
+      "config": {
+        "columns": ["expiring_30_days_count", "potential_revenue_at_risk", "avg_membership_value", "auto_renew_enabled", "manual_action_needed"]
+      }
+    },{
+      "id": "Membership Analytics - Lapsed Memberships ",
+      "title": "Membership Analytics - Lapsed Memberships",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) as lapsed_count,    SUM(recurring_amount) as lost_revenue,    AVG(ABS(days_to_expiration)) as avg_days_lapsed FROM memberships WHERE  is_lapsed = 1 GROUP BY membership_type, membership_name ORDER BY lapsed_count DESC;",
+      "config": {
+        "columns": ["membership_name", "lapsed_count", "lost_revenue", "avg_days_lapsed"]
+      }
+    },{
+      "id": "Membership Analytics - Auto-Renew Success Rate ",
+      "title": "Membership Analytics - Auto-Renew Success Rate",
+      "type": "table",
+      "sql": "SELECT     membership_type,    membership_name,    COUNT(*) as total_auto_renew,    SUM(CASE WHEN is_auto_renew_failed = 0 THEN 1 ELSE 0 END) as successful,    SUM(CASE WHEN is_auto_renew_failed = 1 THEN 1 ELSE 0 END) as failed,    ROUND((SUM(CASE WHEN is_auto_renew_failed = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2) as success_rate,    SUM(recurring_amount) as total_revenue FROM memberships WHERE auto_renew = 1 GROUP BY membership_type, membership_name ORDER BY total_auto_renew DESC;",
+      "config": {
+        "columns": ["membership_name", "total_auto_renew", "successful", "failed", "success_rate", "total_revenue"]
+      }
+    },{
+      "id": "Membership Analytics - Churn Rate ",
+      "title": "Membership Analytics - Churn Rate",
+      "type": "table",
+      "sql": "SELECT     toYYYYMM(cancellation_date) AS churn_month,    toStartOfMonth(cancellation_date) AS month_start,    COUNT(*) AS churned_count,    COUNT(DISTINCT customer_id) AS unique_customers,    SUM(recurring_amount) AS lost_recurring_amount,    AVG(dateDiff('day', enrollment_date, cancellation_date)) AS avg_lifetime_days FROM memberships WHERE cancellation_date IS NOT NULL  AND cancellation_date >= (NOW() - INTERVAL 12 MONTH) GROUP BY churn_month, month_start ORDER BY churn_month DESC;",
+      "config": {
+        "columns": ["month_start", "churned_count", "unique_customers", "lost_recurring_amount", "avg_lifetime_days"]
+      }
+    }
+  ]
+}
+
