@@ -57,6 +57,37 @@ function Aquire(data) {
         4: "Online"
     }[data] || '';
 }
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+  if(totalRecords >0){
+  await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  });     
+  }
+  console.log("updated the last migrated id");
+}
 
 /**
  * BATCH MIGRATION
@@ -64,6 +95,17 @@ function Aquire(data) {
 async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
     let offset = 0;
     let totalInserted = 0;
+    const TABLE_KEY = "customers";
+    let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+        console.log(`▶ Resuming migration from customer.id > ${lastId}`);
+        const [count]= await mysqlConn.execute(`
+            SELECT count(*) as count FROM customer c
+            INNER JOIN serviceProviderCustomerDetails scd 
+                ON scd.customerId = c.id 
+            WHERE scd.serviceProviderId = ? and c.id > ?
+        `, [CONFIG.serviceProviderId, lastId]);
+    const totalRecords = count[0].count;
+    console.log(`📊 Total records to migrate: ${totalRecords}`);
 
     while (true) {
         console.log(`📦 Fetching batch OFFSET ${offset} LIMIT ${batchSize}`);
@@ -76,9 +118,9 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
             FROM customer c
             INNER JOIN serviceProviderCustomerDetails scd 
                 ON scd.customerId = c.id 
-            WHERE scd.serviceProviderId = ?
-            LIMIT ? OFFSET ?
-        `, [CONFIG.serviceProviderId, batchSize, offset]);
+            WHERE scd.serviceProviderId = ? and c.id > ?
+            LIMIT ? 
+        `, [CONFIG.serviceProviderId,lastId, batchSize]);
 
         if (rows.length === 0) {
             console.log("🎉 All customers fully migrated.");
@@ -88,6 +130,7 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
         const batchValues = [];
 
         for (const row of rows) {
+            lastId = row.id;
             const serviceProviderId = CONFIG.serviceProviderId;
 
             const [serviceProviderName] = await mysqlConn.query(
@@ -167,6 +210,8 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
         totalInserted += batchValues.length;
         offset += batchSize;
     }
+    await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+console.log(`✔ Migrated up to ID: ${lastId}`);
 
     console.log(`✅ TOTAL INSERTED INTO CLICKHOUSE: ${totalInserted}`);
 }

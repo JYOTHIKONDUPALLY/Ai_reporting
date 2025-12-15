@@ -39,7 +39,6 @@ CRITICAL: Date Filtering (MUST APPLY):
   - If user specifies a different date range in their question, use that instead
   - If user explicitly asks for "all time", "all data", "total", or "entire history", then you may omit the date filter
   - When joining tables, add date filter to the appropriate table's date column
-SYS;
 
 CRITICAL RULES:
 1. Item Type Normalization (MUST apply - case-insensitive):
@@ -198,9 +197,6 @@ Schema:
 {$schema}
 SYS;
 
-
-
-
         $prompt = <<<EOT
 Generate a ClickHouse SQL query for this question:
 
@@ -251,39 +247,39 @@ $sql = $response->choices[0]->message->content ?? '';
 $sql = preg_replace('/```(sql)?/i', '', $sql);
 $sql = str_replace('```', '', $sql);
 
-// Remove SQL comments (-- comments and /* */ comments) - ClickHouse doesn't allow comments in GROUP BY
-// Remove /* */ style comments first (block comments)
-$sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
-// Remove -- style comments (line comments) - handle both end-of-line and inline comments
-$sql = preg_replace('/\s*--[^\r\n]*/i', '', $sql);
+        // Remove SQL comments (-- comments and /* */ comments) - ClickHouse doesn't allow comments in GROUP BY
+        // Remove /* */ style comments first (block comments)
+        $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+        // Remove -- style comments (line comments) - handle both end-of-line and inline comments
+        $sql = preg_replace('/\s*--[^\r\n]*/i', '', $sql);
 
-// Remove semicolons at the end (ClickHouse will add FORMAT JSON, semicolons cause syntax errors)
-$sql = rtrim($sql, ';');
+        // Remove semicolons at the end (ClickHouse will add FORMAT JSON, semicolons cause syntax errors)
+        $sql = rtrim($sql, ';');
 
-// Clean up multiple spaces and newlines, but preserve single spaces
-$sql = preg_replace('/\s+/', ' ', $sql);
-// Fix spacing around commas in GROUP BY and other clauses
-$sql = preg_replace('/\s*,\s*/', ', ', $sql);
-// Remove trailing commas that might result from comment removal
-$sql = preg_replace('/,\s*$/', '', $sql);
-$sql = preg_replace('/,\s*,/', ',', $sql); // Remove double commas
+        // Clean up multiple spaces and newlines, but preserve single spaces
+        $sql = preg_replace('/\s+/', ' ', $sql);
+        // Fix spacing around commas in GROUP BY and other clauses
+        $sql = preg_replace('/\s*,\s*/', ', ', $sql);
+        // Remove trailing commas that might result from comment removal
+        $sql = preg_replace('/,\s*$/', '', $sql);
+        $sql = preg_replace('/,\s*,/', ',', $sql); // Remove double commas
 
-// Convert MySQL DATE_FORMAT to ClickHouse formatDateTime (if AI mistakenly uses MySQL syntax)
-// DATE_FORMAT(date, '%Y-%m-%d') -> formatDateTime(date, '%Y-%m-%d')
-$sql = preg_replace('/DATE_FORMAT\s*\(/i', 'formatDateTime(', $sql);
+        // Convert MySQL DATE_FORMAT to ClickHouse formatDateTime (if AI mistakenly uses MySQL syntax)
+        // DATE_FORMAT(date, '%Y-%m-%d') -> formatDateTime(date, '%Y-%m-%d')
+        $sql = preg_replace('/DATE_FORMAT\s*\(/i', 'formatDateTime(', $sql);
 
 // Trim whitespace
 $sql = trim($sql);
 
-// Validate that SQL was generated
-if (empty($sql)) {
-    throw new \Exception('Failed to generate SQL query. Please try rephrasing your question or contact support if the issue persists.');
-}
+        // Validate that SQL was generated
+        if (empty($sql)) {
+            throw new \Exception('Failed to generate SQL query. Please try rephrasing your question or contact support if the issue persists.');
+        }
 
-// Basic validation - check if it looks like SQL
-if (!preg_match('/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)/i', $sql)) {
-    throw new \Exception('Invalid SQL query generated. Please try rephrasing your question.');
-}
+        // Basic validation - check if it looks like SQL
+        if (!preg_match('/^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)/i', $sql)) {
+            throw new \Exception('Invalid SQL query generated. Please try rephrasing your question.');
+        }
 
         return $sql;
     }

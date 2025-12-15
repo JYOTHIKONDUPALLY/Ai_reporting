@@ -128,33 +128,20 @@ ORDER BY net_savings DESC;`
         start,
         end,
         N
-      }) => `/* Top ${N} products spend by their top spending customers*/
-WITH top_customers AS (
-    SELECT customer_id, customer_name, SUM(total_amount) AS total_spent
-    FROM invoice_details
-    GROUP BY customer_id, customer_name
-    ORDER BY total_spent DESC
-    LIMIT ${N}
-),
-ranked_products AS (
-    SELECT
-        tc.customer_id,
-        tc.customer_name,
-        iid.item_name,
-        SUM(iid.total_price) AS total_spent,
-        ROW_NUMBER() OVER (
-            PARTITION BY tc.customer_id
-            ORDER BY SUM(iid.total_price) DESC
-        ) AS rn
-    FROM top_customers AS tc
-    INNER JOIN invoice_details AS id
-        ON tc.customer_id = id.customer_id
-    INNER JOIN invoice_items_detail AS iid
-        ON iid.invoice_id = id.id
-    WHERE iid.item_type = 'product'
-    GROUP BY tc.customer_id, tc.customer_name, iid.item_name
-) select 	tc.customer_name AS customer, rp.item_name AS ITEM, sum(rp.total_spent) AS total_spent 
- from ranked_products rp where rn<=${N} GROUP BY customer, ITEM , rn ORDER BY total_spent DESC,  rn ASC;`,
+      }) => `/* Top ${N} purchased products*/
+WITH top_products AS (
+  SELECT iid.item_name, SUM(iid.total_price) AS total_revenue
+  FROM invoice_details id
+  INNER JOIN invoice_items_detail iid ON iid.invoice_id = id.id
+  WHERE iid.item_type = 'product'
+    AND id.invoice_date BETWEEN toDate('2025-10-26') AND toDate('2025-10-26')
+  GROUP BY iid.item_name
+)
+SELECT item_name AS ITEM, total_revenue AS total_spent
+FROM top_products
+ORDER BY total_revenue DESC
+LIMIT ${N};
+`,
 
       repeat_behavior: ({
         start,

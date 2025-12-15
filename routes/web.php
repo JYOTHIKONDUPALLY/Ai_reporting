@@ -32,6 +32,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard routes
     Route::get('/dashboards', [DashboardController::class, 'index'])->name('dashboards.index');
+    Route::get('/dashboards/financial', [DashboardController::class, 'financial'])->name('dashboards.financial');
+    Route::get('/dashboards/financial-table', [DashboardController::class, 'financialTable'])->name('dashboards.financial-table');
     Route::get('/dashboards/{type}', [DashboardController::class, 'show'])->name('dashboards.show');
     Route::get('/dashboards/{type}/data', [DashboardController::class, 'getData'])->name('dashboards.data');
 });

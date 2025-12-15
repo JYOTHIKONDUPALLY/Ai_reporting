@@ -608,18 +608,19 @@
       }) => {
         let dateFilter = '';
         if (start && end) {
-          dateFilter = `AND id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+          dateFilter = `and id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
         } else {
           const defaultEnd = new Date().toISOString().split('T')[0];
           const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+          dateFilter = `and id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
         }
 
         return `/* Top ${N} ${audience?.replace('_', '-')} customers by spend */ 
 SELECT id.customer_name, SUM(iid.total_price) AS total_spent
 FROM invoice_details id
 INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id
-WHERE (lowerUTF8(iid.item_type) IN ('product', 'service', 'class', 'membership', 'package', 'rental', 'giftcard', 'appointment', 'subscription') 
+WHERE (lowerUTF8(iid.item_type) IN ('product', 'service', 'class', 'membership', 'package', 'rental',
+                        'giftcard', 'appointment', 'subscription','guestpass','sponsorship','warranty', 'adavanceBookingFee', 'membershiprental') 
        OR lowerUTF8(iid.item_type) LIKE 'misc%' 
        OR lowerUTF8(iid.item_type) LIKE 'Misc%')
   ${dateFilter}
@@ -857,12 +858,17 @@ WHERE oi.item_type='service' ${dateFilter}`
           dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
         }
         return `/* Range busiest month by distinct customers */
-SELECT formatDateTime(o.invoice_date, '%Y-%m') AS yyyymm, countDistinct(o.customer_id) AS customers
+SELECT 
+    formatDateTime(o.invoice_date, '%b %y') AS yyyymm, 
+    countDistinct(o.customer_id) AS customers
 FROM invoice_details o 
-INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
-WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
-  ${dateFilter}
-  ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
+INNER JOIN invoice_items_detail oi 
+    ON oi.invoice_id = o.id
+INNER JOIN Range_appointments ra 
+    ON CAST(ra.invoiceId AS UInt64) = o.id
+WHERE oi.item_type = 'service'
+${dateFilter}
+  ${audience === 'members' ? 'AND o.is_member = 1' : audience === 'non_members' ? 'AND o.is_member = 0' : ''}
 GROUP BY yyyymm
 ORDER BY customers DESC
 LIMIT 1;`
@@ -893,7 +899,7 @@ LIMIT 1;`
         return `/* Busiest day of week (avg last 12 months) */
 SELECT toDayOfWeek(o.invoice_date) AS dow,
     arrayElement(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], dow) AS day_name,
-    countDistinct(o.customer_id) / countDistinct(toDate(o.invoice_date)) AS avg_customers
+    round(countDistinct(o.customer_id) / countDistinct(toDate(o.invoice_date))) AS avg_customers
 FROM invoice_details o 
 INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
 WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
@@ -976,16 +982,19 @@ LIMIT 100;`
           dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
         }
         return `/* Top products sold with sample exclusions (:exclude_skus, :exclude_categories) */
-SELECT oi.item_name, oi.category, sum(oi.quantity) AS units, sum(oi.total_price) AS revenue
-FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
-WHERE oi.item_type='product' 
+SELECT oi.item_name, oi.category, SUM(oi.quantity) AS units, SUM(oi.total_price) AS revenue
+FROM invoice_items_detail oi 
+INNER JOIN invoice_details o ON o.id = oi.invoice_id
+WHERE oi.item_type = 'product' 
+  AND oi.invoice_id NOT IN (SELECT DISTINCT invoiceId FROM Range_appointments)
   ${dateFilter}
   ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
   AND oi.SKU NOT IN ('')
   AND oi.category NOT IN ('Range Services', 'Memberships')
 GROUP BY oi.item_name, oi.category
 ORDER BY units DESC
-LIMIT ${N};`
+LIMIT ${N};
+`
       },
       prd_turnover: ({
         start,
@@ -1290,18 +1299,13 @@ ORDER BY toStartOfMonth(id.invoice_date) ASC, total_sales DESC`
           dateFilter = `AND id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
         }
         return `
-  SELECT
-    iid.category,
-    TRIM(iid.item_name) as item_name,
-    COUNT(DISTINCT id.id) as invoice_count,
-    sum(iid.quantity) as qty_sold,
-    SUM(iid.total_price) as total_sales
-FROM invoice_details id
-INNER JOIN invoice_items_detail iid
-    ON id.id = iid.invoice_id
-WHERE iid.item_type = 'membership'
-  ${dateFilter}
-GROUP BY iid.category, TRIM(iid.item_name)
+  SELECT iid.category, 
+COUNT(DISTINCT id.id) as invoice_count, sum(iid.quantity) as qty_sold, 
+SUM(iid.total_price) as total_sales FROM invoice_details id 
+INNER JOIN invoice_items_detail iid ON id.id = iid.invoice_id 
+WHERE iid.item_type = 'membership' 
+    ${dateFilter}
+GROUP BY iid.category
 ORDER BY iid.category, total_sales DESC`
       },
       mem_Trans_count: ({

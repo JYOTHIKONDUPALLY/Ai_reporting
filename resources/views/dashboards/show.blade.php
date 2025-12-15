@@ -153,11 +153,18 @@
                 <div class="px-6">
                     <nav class="flex space-x-1 overflow-x-auto" aria-label="Dashboard Tabs">
                         @foreach($allDashboards ?? [] as $dash)
-                        <a href="{{ route('dashboards.show', $dash['type']) }}?period={{ $currentPeriod ?? 'all_time' }}"
-                           class="dashboard-tab px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors {{ $dashboardType === $dash['type'] ? 'border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300' }}"
-                           style="{{ $dashboardType === $dash['type'] ? 'border-color: #A71930; color: #A71930;' : '' }}">
-                            {{ $dash['title'] }}
-                        </a>
+                            @if(isset($dash['route']))
+                                <a href="{{ route($dash['route']) }}"
+                                   class="dashboard-tab px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300">
+                                    {{ $dash['title'] }}
+                                </a>
+                            @else
+                                <a href="{{ route('dashboards.show', $dash['type']) }}?period={{ $currentPeriod ?? 'all_time' }}"
+                                   class="dashboard-tab px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors {{ $dashboardType === $dash['type'] ? 'border-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300' }}"
+                                   style="{{ $dashboardType === $dash['type'] ? 'border-color: #A71930; color: #A71930;' : '' }}">
+                                    {{ $dash['title'] }}
+                                </a>
+                            @endif
                         @endforeach
                     </nav>
                 </div>

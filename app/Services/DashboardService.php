@@ -71,6 +71,9 @@ class DashboardService
      */
     public function getDashboardData(string $dashboardType, array $filters = []): array
     {
+        log::info('Getting dashboard data', [
+            'dashboard' => $dashboardType
+        ]);
         $config = $this->loadDashboardConfig($dashboardType);
         
         if (!$config) {
