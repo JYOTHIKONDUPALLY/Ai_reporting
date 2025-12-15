@@ -207,18 +207,53 @@ async function checkReceivedQuantityIsBilled(mysqlConn, poItemId) {
   return rows.length > 0 ? 1 : 0;
 }
 
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+  if(totalRecords >0){
+     await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  });
+  }
+  console.log("updated the last migrated id");
+}
+
 /**
  * Main migration function
  */
 async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) {
   
   try {
+    const TABLE_KEY = "product_inventory";
+    let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+        console.log(`▶ Resuming migration from product.id > ${lastId}`);
     const serviceProviderId = 2087; // Use the same ID for query and stats
 
     // Get total count
     const [countResult] = await mysqlConn.execute(
-      'SELECT COUNT(*) as total FROM product WHERE serviceProviderId = ?',
-      [serviceProviderId]
+      'SELECT COUNT(*) as total FROM product WHERE serviceProviderId = ? and status = 1 and product.id > ? ',
+      [serviceProviderId, lastId]
     );
     const totalRecords = countResult[0].total;
     console.log(`Total records to migrate: ${totalRecords}`);
@@ -263,9 +298,9 @@ async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) 
           p.lastUpdated
         FROM product p
         WHERE p.serviceProviderId = ?
-          AND p.status = 1
+          AND p.status = 1 and p.id > ${lastId}
         ORDER BY p.id
-        LIMIT ${batchSize} OFFSET ${offset}
+        LIMIT ${batchSize}
       `, [serviceProviderId]);
 
       console.log(`  🔹 Retrieved ${rows.length} rows from MySQL`);
@@ -325,6 +360,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) 
       const processedData = [];
       for (const row of rows) {
         try {
+          lastId = row.id;
           // Get serial numbers
           const serialNumbers = await getSerialNumbers(mysqlConn, row.id);
           
@@ -410,6 +446,8 @@ async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) 
       console.log(`➡️ Progress: Migrated=${totalMigrated}, Errors=${totalErrors}`);
     }
 
+     await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+console.log(`✔ Migrated up to ID: ${lastId}`);
     console.log(`\n🏁 Migration finished: ${totalMigrated} migrated, ${totalErrors} errors`);
     
     if (errors.length > 0) {

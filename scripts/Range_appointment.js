@@ -58,11 +58,46 @@ function formatDateOnly(dateValue) {
   }
 }
 
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+  if(totalRecords >0){
+ await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  });
+}
+  console.log("updated the last migrated id");
+}
+
 export async function migrateAppointments(mysqlConnection, clickhouseClient, batchSize = 2000) {
+  const TABLE_KEY = "Range_appointments";
+      let lastId = await getLastMigratedId(clickhouseClient, TABLE_KEY);
+        console.log(`▶ Resuming migration from appointment.id > ${lastId}`);
   console.log('Starting appointment migration with range and rental data...');
   
   // Create ClickHouse table
-  await createClickHouseTable(clickhouseClient);
+  // await createClickHouseTable(clickhouseClient);
   
   // Build WHERE clause for filtering
   let whereConditions = ['1=1'];
@@ -87,8 +122,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
   
   // Get total count
   const [countResult] = await mysqlConnection.execute(
-    `SELECT COUNT(*) as total FROM appointment a inner join rangeTicket r on r.appointmentId = a.id WHERE a.serviceProviderId=2087`
-  );
+    `SELECT COUNT(*) as total FROM appointment a inner join rangeTicket r on r.appointmentId = a.id WHERE a.serviceProviderId=2087 and a.id > ${lastId}`  );
   const totalRecords = countResult[0].total;
   console.log(`Total records to migrate: ${totalRecords}`);
   
@@ -124,9 +158,9 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
     const query = `
       SELECT a.* FROM appointment a
       inner join rangeTicket r on r.appointmentId = a.id
-      WHERE a.serviceProviderId=2087
-      ORDER BY a.date, a.id
-      LIMIT ${batchSize} OFFSET ${offset}
+      WHERE a.serviceProviderId=2087  and a.id > ${lastId}
+      ORDER BY a.date, a.id 
+      LIMIT ${batchSize}
     `;
     
     const [appointments] = await mysqlConnection.execute(query);
@@ -302,7 +336,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
       const customerMember = customerMemberMap[appt.customerMemberId] || {};
       const package_ = packageMap[appt.packageId] || {};
       const addon = addonMap[appt.addonId] || {};
-      
+         lastId = appt.id;
       return {
         // Appointment fields
         id: appt.id,
@@ -478,6 +512,9 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
     
     offset += batchSize;
   }
+  
+  await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId, totalRecords);
+  console.log(`✔ Migrated up to ID: ${lastId}`);
   
   console.log(`\n✓ Migration completed successfully!`);
   console.log(`Total records migrated: ${migratedCount}`);

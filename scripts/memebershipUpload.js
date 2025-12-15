@@ -47,14 +47,55 @@ function formateDateOnly(dateValue) {
   }
 }
 
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+
+  if(totalRecords >0){
+    await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  }); 
+  }
+
+  console.log("updated the last migrated id");
+}
+
 // =====================================================================
 // MIGRATE MEMBERSHIP ANALYTICS
 // =====================================================================
-async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
+async function migrateMembership(mysqlConn, clickhouse, batchSize = 200) {
+   const TABLE_KEY = "memberships";
+   let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+        console.log(`▶ Resuming migration from membership.id > ${lastId}`);
   let offset = 0;
   let total = 0;
-
-  console.log(`🚀 Starting Membership Migration`);
+  const [count] = await mysqlConn.execute(`
+    SELECT count(*) as count FROM membershipEnrollment 
+    WHERE serviceProviderId = 2087 and membershipEnrollment.id > ?
+  `, [lastId]);
+  const totalRecords = count[0].count;
+  console.log(`📊 Total records to migrate: ${totalRecords}`);
 
   // Helper function to create placeholders for IN clause
   const createPlaceholders = (arr) => arr.map(() => '?').join(',');
@@ -64,14 +105,12 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
     const [enrollments] = await mysqlConn.execute(
       `SELECT * FROM membershipEnrollment 
        WHERE serviceProviderId = 2087
+       AND membershipEnrollment.id > ${lastId}
        ORDER BY id
-       LIMIT ${batchSize}
-       OFFSET ${offset}`,
+       LIMIT ${batchSize}`,
     );
 
     if (enrollments.length === 0) break;
-
-    console.log(`Fetched ${enrollments.length} enrollments from MySQL`);
 
     // Extract unique IDs for batch queries
     const membershipIds = [...new Set(enrollments.map(e => e.membershipId).filter(id => id != null))];
@@ -138,7 +177,6 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
         : []
     ]);
 
-    console.log(`Fetched related data: ${memberships.length} memberships, ${subscriptions.length} subscriptions, ${customers.length} customers`);
 
     // Fetch subscription invoices for subscriptions
     let subscriptionInvoices = [];
@@ -153,7 +191,6 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
           subscriptionIds
         );
         subscriptionInvoices = invoices;
-        console.log(`Fetched ${subscriptionInvoices.length} subscription invoices`);
       } catch (error) {
         console.log('No subscription invoices found or error fetching:', error.message);
       }
@@ -213,7 +250,6 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
 
       // Subscription status logic
       let subscriptionStatus = 'Unknown';
-      console.log("subscription.status", subscription.status, subscription.flag);
       if (subscription.status === 1 && subscription.flag === 0) subscriptionStatus = 'Current';
       else if (subscription.status === 1 && subscription.flag === 1) subscriptionStatus = 'Pending';
       else if ([3, 6, 11].includes(subscription.status)) subscriptionStatus = 'OnHold';
@@ -243,7 +279,7 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
       
       const cancellationDate = subscription.cancellationDate ? new Date(subscription.cancellationDate) : null;
       const daysSinceCancellation = cancellationDate ? Math.floor((currentDate - cancellationDate) / (1000 * 60 * 60 * 24)) : null;
-
+lastId = me.id;
       return {
         // Primary Keys & IDs
         enrollment_id: me.id,
@@ -335,10 +371,6 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
       };
     });
 
-    if (cleanedRows.length > 0) {
-      console.log(`Last payment status - ${cleanedRows[0].last_payment_status}`);
-    }
-
     await clickhouse.insert({
       table: 'memberships',
       values: cleanedRows,
@@ -347,9 +379,10 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 2000) {
 
     total += enrollments.length;
     offset += batchSize;
-
-    console.log(`➡️ Migrated ${total} rows...`);
   }
+await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+console.log(`✔ Migrated up to ID: ${lastId}`);
+    
 
   console.log(`✅ Migration Completed | Total Rows: ${total}`);
 }

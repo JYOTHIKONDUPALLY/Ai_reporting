@@ -1,6 +1,38 @@
 import mysql from 'mysql2/promise';
 import { createClient } from '@clickhouse/client';
 
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+ if(totalRecords >0){await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  });
+}
+  console.log("updated the last migrated id");
+}
+
+
 async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
   // --- Helpers ---
   function formatDate(dateValue) {
@@ -57,9 +89,12 @@ async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
     v === null || v === undefined ? def : String(v);
 
   try {
+        const TABLE_KEY = "paymentDetails";
+         let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+        console.log(`▶ Resuming migration from paymentItemNew.id > ${lastId}`);
     // Count total records
     const [countResult] = await mysqlConn.execute(
-      `SELECT COUNT(*) as total FROM paymentItemNew  where paymentItemNew.serviceProviderId =2087`
+      `SELECT COUNT(*) as total FROM paymentItemNew  where paymentItemNew.serviceProviderId =22 and status=1 and paymentItemNew.id > ${lastId}`
     );
     const totalRecords = countResult[0].total;
     console.log(`Total payments to migrate: ${totalRecords}`);
@@ -68,25 +103,25 @@ async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
       console.log("No payments found to migrate.");
       return;
     }
-
-    let offset = 0;
+let offset = 0;
     let totalMigrated = 0;
 
-    while (offset < totalRecords) {
+    while (totalMigrated < totalRecords) {
       // ⚠️ Alias IDs to avoid collisions
       const [rows] = await mysqlConn.execute(
         `SELECT 
             paymentItemNew.id AS paymentId,
             paymentItemNew.*
          FROM paymentItemNew         
-          where serviceProviderId =2087 && status=1
+          where serviceProviderId =22 && status=1 && paymentItemNew.id > ${lastId}
          ORDER BY id
-         LIMIT ${batchSize} OFFSET ${offset}
+         LIMIT ${batchSize}
         `
       );
 
       const data = [];
       for (const r of rows) {
+        lastId = r.id;
         // Provider name
         let providerName = "Other";
         let locationId =0;
@@ -163,11 +198,6 @@ async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
       }
 
       if (data.length > 0) {
-        if (offset === 0) {
-          console.log("Sample record for ClickHouse insert:");
-          console.log(JSON.stringify(data[0], null, 2));
-        }
-
         await clickhouse.insert({
           table: "paymentDetails",
           values: data,
@@ -182,6 +212,8 @@ async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
 
       offset += batchSize;
     }
+      await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+console.log(`✔ Migrated up to ID: ${lastId}`);
 
     console.log(`🎉 Payments migration completed. Total migrated: ${totalMigrated}`);
   } catch (err) {
@@ -195,10 +227,10 @@ async function migratePayments(mysqlConn, clickhouse, batchSize = 1000) {
 async function migrateData() {
 
   const mysqlConn = await mysql.createConnection({
-    host: 'bizzflo-production-aurora3-cluster.cluster-ro-cs3e3cx0hfys.us-west-2.rds.amazonaws.com',   // or your DB host
-    user: 'bizzflo',        // your DB username
-    password: 'my5qlskeedazz!!',// your DB password
-    database: 'bizzflo'   // your DB name
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'bizzflo',
   });
 
   const clickhouse = createClient({

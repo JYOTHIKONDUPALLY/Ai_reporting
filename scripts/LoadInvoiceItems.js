@@ -179,7 +179,45 @@ async function getCategoryAndSubcategory(type, itemId, mysqlConn) {
   return { category, subcategory };
 }
 
+
+async function getLastMigratedId(clickhouse, tableName) {
+   const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+  
+  if(totalRecords >0){
+     await clickhouse.insert({
+    table: 'migration_progress',
+    values: [{
+      table_name: tableName,
+      last_migrated_id: lastId,
+      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
+    }],
+    format: 'JSONEachRow'
+  });
+  }
+
+  console.log("updated the last migrated id");
+}
+
+
 async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
+
+const TABLE_KEY = "invoice_items_detail";
+
   const safeNum = (v, def = 0) =>
     v === null || v === undefined || v === '' || isNaN(Number(v)) ? def : Number(v);
   const safeStr = (v, def = '') => (v === null || v === undefined ? def : String(v));
@@ -206,6 +244,10 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
   }
 
   try {
+
+      let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+        console.log(`▶ Resuming migration from invoiceItemNew.id > ${lastId}`);
+
     // ✅ Preload brand/category/subcategory mappings
     const [brands] = await mysqlConn.execute(`SELECT id, name FROM productBrand`);
     const [categories] = await mysqlConn.execute(`SELECT id, name FROM productCategory`);
@@ -216,7 +258,7 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
     const subCategoryMap = new Map(subcategories.map(s => [s.name.toLowerCase(), s.id]));
 
     // Count total rows
-    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceItemNew where serviceProviderId = 2087`);
+    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceItemNew where serviceProviderId = 2087 AND invoiceItemNew.id > ${lastId}`);
     const totalRecords = countResult[0].total;
     console.log(`Total invoice items to migrate: ${totalRecords}`);
 
@@ -226,12 +268,14 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
         `SELECT i.*
          FROM invoiceItemNew i
          where i.serviceProviderId = 2087
+         AND i.id > ${lastId}
          ORDER BY i.id
-         LIMIT ${batchSize} OFFSET ${offset}`
+         LIMIT ${batchSize}`
       );
 
       const data = [];
       for (const r of rows) {
+        lastId = r.id;
         // console.log(`processing datat row id: ${JSON.stringify(r)}`);
         // console.log(`Processing invoice item ID: ${r.id}, Type: ${r.type}, Item type ID: ${r.itemTypeId} with cogs: ${r.cogs}, commission: ${r.commission}`);
         // --- brand/sku/upc lookup for products ---
@@ -256,7 +300,7 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
             }
           }
 
-          console.log(` Product ID ${r.itemId} → Brand: ${brandName}, SKU: ${skuValue}, UPC: ${upcValue}`);
+          
         }
 
         // --- category/subcategory ---
@@ -357,6 +401,9 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
 
       offset += batchSize;
     }
+
+await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+console.log(`✔ Migrated up to ID: ${lastId}`);
 
     console.log('🎉 Invoice items migration completed!');
   } catch (err) {
