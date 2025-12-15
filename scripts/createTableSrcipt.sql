@@ -527,3 +527,14 @@ CREATE TABLE IF NOT EXISTS Range_appointments (
 ) ENGINE = MergeTree()
 ORDER BY (serviceProviderId, appointmentDate, id)
 PARTITION BY toYear(appointmentDate);
+
+
+DROP TABLE IF EXISTS clickHouseInvoice.migration_progress ;
+CREATE TABLE migration_progress
+(
+    table_name String,
+    last_migrated_id UInt64,
+    updated_at DateTime DEFAULT now()
+)
+ENGINE = MergeTree
+ORDER BY table_name;
