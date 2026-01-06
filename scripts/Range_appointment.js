@@ -90,8 +90,161 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
-export async function migrateAppointments(mysqlConnection, clickhouseClient, batchSize = 2000) {
-  const TABLE_KEY = "Range_appointments";
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT serviceProviderId
+    FROM invoiceNew
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+  id Int32,
+  customerId Int32,
+  customerName String,
+  serviceProviderId Int32,
+  providerName String,
+  serviceLocation Int32,
+  serviceLocationName String,
+  approval String,
+  appointmentDate Date,
+  slotTime String,
+  status Int32,
+  serviceId Int32,
+  serviceName String,
+  locationId Int32,
+  locationName String,
+  resourceId Int32,
+  resourceName String,
+  resourceStaffType String,
+  recurringId Int32,
+  recurringPattern String,
+  invoiceId Int32,
+  customerMemberId Int32,
+  customerMemberName String,
+  packageId Int32,
+  packageName String,
+  payment String,
+  packageEnrollmentId Int32,
+  customId String,
+  bookingMethod String,
+  creationDate DateTime,
+  parentId Int32,
+  cancelType String,
+  membershipId Int32,
+  actualStartTime String,
+  actualEndTime String,
+  additionalStatus Int32,
+  reasonId Int32,
+  parentAppointmentId Int32,
+  addons String,
+  addonId Int32,
+  addonName String, 
+  addonType String,
+  addonDuration Int32,
+  addonActualPrice Int32,
+  addonPrice Int32, 
+  addonItemId Int32,
+  
+  additionalServiceParentId Int32,
+  additionalServices String,
+  additionalServiceId Int32,
+  additionalCustomers String,
+  additionalCustomerMembers String,
+  instantRedeemable Int8,
+  customerNoteId Int32,
+  checkoutTogether Int8,
+  checkDeviceAvailability Int8,
+  customerConfirmation Int8,
+  treatmentItemId Int32,
+  sequenceDelay String,
+  sequencePriority Int32,
+  additionalPersonsQty Int32,
+  requiredServices String,
+  bookedBy Int32,
+  bookedFrom Int32,
+  bookedNameText String,
+  customerSessionId Int32,
+  isAddedToCart Int32,
+  groupId Int32,
+  sessionEnd Int32,
+  sessionEndDate DateTime,
+  sessionEndBy Int32,
+  extendedAppointment Int32,
+  extendedParentAppointmentId Int32,
+  extendedDuration Int32,
+  extendedPrice Float32,
+  isAppointmentExtended Int32,
+  appointmentRequested Int32,
+  checkinGroupCode String,
+  temp_fetch Int32,
+  internallyDeleted Int32,
+  loggedInCustomerMemberId Int32,
+  startDate Date,
+  endDate Date,
+  additionalPersonParentId Int32,
+  additionalCustomerId Int32,
+  additionalCustomerMemberId Int32,
+  overNight Int32,
+  
+  -- Range ticket fields
+  rangeTicketId Int32,
+  lane Int32,
+  timeIn String,
+  timeOut String,
+  membersCount Int32,
+  nonMembersCount Int32,
+  firearmProducts String,
+  firearmItems String,
+  firearmItemsCount String,
+  ammoItems String,
+  ammoItemsCount String,
+  rangeCreatedDate DateTime,
+  rangeCreatedBy Int32,
+  rangeStatus Int32,
+  
+  -- Rental items (arrays for multiple rentals per appointment)
+  totalRentals Int32,
+  rentalIds Array(Int32),
+  rentalProductIds Array(Int32),
+  rentalInventoryIds Array(Int32),
+  rentalSerialNumbers Array(String),
+  rentalProductTypes Array(String),
+  rentalQuantities Array(Int32),
+  rentalRentTimes Array(DateTime),
+  rentalReturnTimes Array(DateTime),
+  rentalPaidStatuses Array(Int32),
+  rentalInvoiceIds Array(Int32),
+  rentalStatuses Array(Int32),
+  rentalAmmoUsedCounts Array(Int32),
+  
+  -- Analytics fields
+  sessionDuration Int32,
+  totalVisitors Int32,
+  dayOfWeek Int8,
+  monthOfYear Int8,
+  year Int32,
+  timeOfDay String,
+  isWeekend Int8,
+  totalAmmoUsed Int32,
+  hasFirearms Int8,
+  hasAmmo Int8
+) ENGINE = MergeTree()
+ORDER BY (serviceProviderId, appointmentDate, id)
+PARTITION BY toYear(appointmentDate)
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
+
+export async function migrateAppointments(mysqlConnection, clickhouseClient, serviceProviderId, batchSize = 2000) {
+  const TABLE_KEY = `Range_appointments_${serviceProviderId}`;
       let lastId = await getLastMigratedId(clickhouseClient, TABLE_KEY);
         console.log(`▶ Resuming migration from appointment.id > ${lastId}`);
   console.log('Starting appointment migration with range and rental data...');
@@ -105,7 +258,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
   
   if (CONFIG.serviceProviderId) {
     whereConditions.push('serviceProviderId = ?');
-    params.push(CONFIG.serviceProviderId);
+    params.push(serviceProviderId);
   }
   
   if (CONFIG.dateFrom) {
@@ -122,7 +275,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
   
   // Get total count
   const [countResult] = await mysqlConnection.execute(
-    `SELECT COUNT(*) as total FROM appointment a inner join rangeTicket r on r.appointmentId = a.id WHERE a.serviceProviderId=2087 and a.id > ${lastId}`  );
+    `SELECT COUNT(*) as total FROM appointment a inner join rangeTicket r on r.appointmentId = a.id WHERE a.serviceProviderId=${serviceProviderId} and a.id > ${lastId}`  );
   const totalRecords = countResult[0].total;
   console.log(`Total records to migrate: ${totalRecords}`);
   
@@ -158,7 +311,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
     const query = `
       SELECT a.* FROM appointment a
       inner join rangeTicket r on r.appointmentId = a.id
-      WHERE a.serviceProviderId=2087  and a.id > ${lastId}
+      WHERE a.serviceProviderId=${serviceProviderId}  and a.id > ${lastId}
       ORDER BY a.date, a.id 
       LIMIT ${batchSize}
     `;
@@ -512,11 +665,16 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
     
     offset += batchSize;
   }
-  
-  await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId, totalRecords);
+  if(totalRecords ===migratedCount){
+     await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId, totalRecords);
   console.log(`✔ Migrated up to ID: ${lastId}`);
+   console.log(`\n✓ Migration completed successfully!`);
+  } else {
+ console.log(`\n✓few migrations are missing!`);
+  }
+ 
   
-  console.log(`\n✓ Migration completed successfully!`);
+ 
   console.log(`Total records migrated: ${migratedCount}`);
   
   // Verify data in ClickHouse
@@ -527,148 +685,6 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, bat
   
   const rows = await result.json();
   console.log(`\nVerification: ${rows[0].total} records in ClickHouse table`);
-}
-
-async function createClickHouseTable(clickhouseClient) {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS Range_appointments (
-    id Int32,
-  customerId Int32,
-  customerName String,
-  serviceProviderId Int32,
-  providerName String,
-  serviceLocation Int32,
-  serviceLocationName String,
-  approval String,
-  appointmentDate Date,
-  slotTime String,
-  status Int32,
-  serviceId Int32,
-  serviceName String,
-  locationId Int32,
-  locationName String,
-  resourceId Int32,
-  resourceName String,
-  resourceStaffType String,
-  recurringId Int32,
-  recurringPattern String,
-  invoiceId Int32,
-  customerMemberId Int32,
-  customerMemberName String,
-  packageId Int32,
-  packageName String,
-  payment String,
-  packageEnrollmentId Int32,
-  customId String,
-  bookingMethod String,
-  creationDate DateTime,
-  parentId Int32,
-  cancelType String,
-  membershipId Int32,
-  actualStartTime String,
-  actualEndTime String,
-  additionalStatus Int32,
-  reasonId Int32,
-  parentAppointmentId Int32,
-  addons String,
-  addonId Int32,
-  addonName String, 
-  addonType String,
-  addonDuration Int32,
-  addonActualPrice Int32,
-  addonPrice Int32, 
-  addonItemId Int32,
-  
-  additionalServiceParentId Int32,
-  additionalServices String,
-  additionalServiceId Int32,
-  additionalCustomers String,
-  additionalCustomerMembers String,
-  instantRedeemable Int8,
-  customerNoteId Int32,
-  checkoutTogether Int8,
-  checkDeviceAvailability Int8,
-  customerConfirmation Int8,
-  treatmentItemId Int32,
-  sequenceDelay String,
-  sequencePriority Int32,
-  additionalPersonsQty Int32,
-  requiredServices String,
-  bookedBy Int32,
-  bookedFrom Int32,
-  bookedNameText String,
-  customerSessionId Int32,
-  isAddedToCart Int32,
-  groupId Int32,
-  sessionEnd Int32,
-  sessionEndDate DateTime,
-  sessionEndBy Int32,
-  extendedAppointment Int32,
-  extendedParentAppointmentId Int32,
-  extendedDuration Int32,
-  extendedPrice Float32,
-  isAppointmentExtended Int32,
-  appointmentRequested Int32,
-  checkinGroupCode String,
-  temp_fetch Int32,
-  internallyDeleted Int32,
-  loggedInCustomerMemberId Int32,
-  startDate Date,
-  endDate Date,
-  additionalPersonParentId Int32,
-  additionalCustomerId Int32,
-  additionalCustomerMemberId Int32,
-  overNight Int32,
-  
-  -- Range ticket fields
-  rangeTicketId Int32,
-  lane Int32,
-  timeIn String,
-  timeOut String,
-  membersCount Int32,
-  nonMembersCount Int32,
-  firearmProducts String,
-  firearmItems String,
-  firearmItemsCount String,
-  ammoItems String,
-  ammoItemsCount String,
-  rangeCreatedDate DateTime,
-  rangeCreatedBy Int32,
-  rangeStatus Int32,
-  
-  -- Rental items (arrays for multiple rentals per appointment)
-  totalRentals Int32,
-  rentalIds Array(Int32),
-  rentalProductIds Array(Int32),
-  rentalInventoryIds Array(Int32),
-  rentalSerialNumbers Array(String),
-  rentalProductTypes Array(String),
-  rentalQuantities Array(Int32),
-  rentalRentTimes Array(DateTime),
-  rentalReturnTimes Array(DateTime),
-  rentalPaidStatuses Array(Int32),
-  rentalInvoiceIds Array(Int32),
-  rentalStatuses Array(Int32),
-  rentalAmmoUsedCounts Array(Int32),
-  
-  -- Analytics fields
-  sessionDuration Int32,
-  totalVisitors Int32,
-  dayOfWeek Int8,
-  monthOfYear Int8,
-  year Int32,
-  timeOfDay String,
-  isWeekend Int8,
-  totalAmmoUsed Int32,
-  hasFirearms Int8,
-  hasAmmo Int8
-) ENGINE = MergeTree()
-ORDER BY (serviceProviderId, appointmentDate, id)
-PARTITION BY toYear(appointmentDate);
-  `;
-  
-  await clickhouseClient.exec({ query: createTableQuery });
-  console.log('ClickHouse table created/verified successfully');
 }
 
 function getApprovalStatus(approval) {
@@ -721,6 +737,11 @@ async function migrateData() {
     database: "bizzflo"
   });
 
+   console.log("✅ Connected to MySQL!");
+
+    const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
+    console.log("DB Time:", resultRows[0].now);
+
   const clickhouse = createClient({
     url: "http://localhost:8123",
     username: "default",
@@ -729,7 +750,16 @@ async function migrateData() {
   });
 
   try {
-    await migrateAppointments(mysqlConn, clickhouse, CONFIG.batchSize);
+    const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+   for (const providerId of providerIds) {
+      const tableName = `Range_appointments_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+
+      await createInvoiceTable(clickhouse, tableName);
+       await migrateAppointments(mysqlConn, clickhouse,providerId, CONFIG.batchSize);
+    }
+   
   } catch (error) {
     console.error('\n✗ Migration failed:', error);
     console.error('Error details:', error.message);

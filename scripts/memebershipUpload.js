@@ -81,18 +81,134 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT id as serviceProviderId
+    FROM serviceProvider
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+    -- Primary Keys & IDs
+    enrollment_id UInt64,
+    membership_id UInt32,
+    customer_id UInt32,
+    member_id UInt32,
+    service_provider_id UInt32,
+    subscription_id Nullable(UInt64),
+    invoice_id Nullable(UInt64),
+    parent_invoice_id Nullable(UInt64),
+    location_id Nullable(UInt32),
+    franchise_id Nullable(UInt32),
+    
+    -- Customer & Member Info
+    customer_name String,
+    member_name String,
+    customer_member_id Nullable(UInt64),
+    primary_member UInt8,  -- boolean 0/1
+    parent_enrollment_id Nullable(UInt64),
+    
+    -- Membership Details
+    membership_name String,
+    membership_type String,
+    membership_type_id UInt32,
+    membership_status String,  -- 'Active', 'Expired', 'Cancelled', etc.
+    enrollment_status String,
+    hasFull_membership String,
+    online_visible UInt8,
+    
+    -- Subscription Details
+    subscription_type String,
+    subscription_status String,  -- 'Active', 'Cancelled', 'Suspended'
+    auto_renew UInt8,  -- boolean 0/1
+    payment_method UInt8,
+    
+    -- Dates (Critical for Analytics)
+    enrollment_date DateTime,
+    start_date Date,
+    contract_duration_date Nullable(Date),
+    expiration_date Nullable(Date),
+    next_billing_date Nullable(Date),
+    renewal_date Nullable(Date),
+    first_renewal_date Nullable(Date),
+    next_renewal_date Nullable(Date),
+    renewal_notification_date Nullable(Date),
+    cancellation_date Nullable(DateTime),
+    deleted_date Nullable(DateTime),
+    
+    -- Financial Data
+    membership_price Decimal(10,2),
+    recurring_amount Decimal(10,2),
+    subscription_amount Decimal(10,2),
+    registration_fee Decimal(10,2),
+    total_amount Decimal(10,2),
+    last_payment_status String,
+    last_payment_amount Decimal(10,2),
+    last_payment_date Nullable(Date),
+    
+    -- Membership Configuration
+    duration_count UInt16,
+    duration_type UInt8,  -- days/months/years
+    renewal_type UInt8,
+    no_of_members_included UInt16,
+    no_of_additional_members UInt16,
+    
+    -- Auto-Renewal Tracking
+    auto_exception UInt8,
+    declined_count UInt16,
+    no_of_payments Nullable(String),
+    payment_day Nullable(UInt8),
+    
+    -- Cancellation Info
+    cancel_reason Nullable(String),
+    cancel_notes Nullable(String),
+    cancelled_by Nullable(UInt32),
+    deleted_by Nullable(UInt32),
+    
+    -- Churn & Retention Metrics (Calculated)
+    days_to_expiration Int32,  -- can be negative if expired
+    is_active UInt8,  -- boolean
+    is_expiring_30days UInt8,  -- boolean
+    is_expiring_60days UInt8,  -- boolean
+    is_lapsed UInt8,  -- boolean
+    is_auto_renew_failed UInt8,  -- boolean
+    days_since_cancellation Nullable(Int32),
+    
+    -- Categorization
+    booking_method UInt8,
+    department_id Nullable(UInt32),
+    
+    -- Timestamps
+    created_at DateTime DEFAULT now(),
+    updated_at DateTime DEFAULT now()
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(enrollment_date)
+ORDER BY (service_provider_id, enrollment_id, enrollment_date)
+SETTINGS index_granularity = 8192;
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
 // =====================================================================
 // MIGRATE MEMBERSHIP ANALYTICS
 // =====================================================================
-async function migrateMembership(mysqlConn, clickhouse, batchSize = 200) {
-   const TABLE_KEY = "memberships";
+async function migrateMembership(mysqlConn, clickhouse,serviceProviderId, batchSize = 200) {
+   const TABLE_KEY = `memberships_${serviceProviderId}`;
    let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
         console.log(`▶ Resuming migration from membership.id > ${lastId}`);
   let offset = 0;
   let total = 0;
   const [count] = await mysqlConn.execute(`
     SELECT count(*) as count FROM membershipEnrollment 
-    WHERE serviceProviderId = 2087 and membershipEnrollment.id > ?
+    WHERE serviceProviderId = ${serviceProviderId} and membershipEnrollment.id > ?
   `, [lastId]);
   const totalRecords = count[0].count;
   console.log(`📊 Total records to migrate: ${totalRecords}`);
@@ -104,7 +220,7 @@ async function migrateMembership(mysqlConn, clickhouse, batchSize = 200) {
     // Fetch enrollment data only
     const [enrollments] = await mysqlConn.execute(
       `SELECT * FROM membershipEnrollment 
-       WHERE serviceProviderId = 2087
+       WHERE serviceProviderId = ${serviceProviderId}
        AND membershipEnrollment.id > ${lastId}
        ORDER BY id
        LIMIT ${batchSize}`,
@@ -372,7 +488,7 @@ lastId = me.id;
     });
 
     await clickhouse.insert({
-      table: 'memberships',
+      table: TABLE_KEY,
       values: cleanedRows,
       format: 'JSONEachRow',
     });
@@ -380,10 +496,11 @@ lastId = me.id;
     total += enrollments.length;
     offset += batchSize;
   }
-await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+  if(total >0 ){
+    await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
 console.log(`✔ Migrated up to ID: ${lastId}`);
-    
-
+  }
+     
   console.log(`✅ Migration Completed | Total Rows: ${total}`);
 }
 
@@ -392,10 +509,10 @@ console.log(`✔ Migrated up to ID: ${lastId}`);
 // =====================================================================
 async function migrateData() {
   const mysqlConn = await mysql.createConnection({
-    host: 'bizzflo-production-aurora3-cluster.cluster-ro-cs3e3cx0hfys.us-west-2.rds.amazonaws.com',
-    user: 'bizzflo',
-    password: 'my5qlskeedazz!!',
-    database: 'bizzflo'
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'bizzflo',
   });
 
   const clickhouse = createClient({
@@ -406,10 +523,18 @@ async function migrateData() {
   });
 
   try {
-    await migrateMembership(mysqlConn, clickhouse);
+    const providerIds = await getDistinctServiceProviders(mysqlConn);
+    console.log(`🔑 Found ${providerIds.length} service providers`);
+    for (const providerId of providerIds) {
+      const tableName = `memberships_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+      await createInvoiceTable(clickhouse, tableName);
+    await migrateMembership(mysqlConn, clickhouse, providerId);
+    }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();
+     console.log('MySQL and ClickHouse connections closed');
   }
 }
 

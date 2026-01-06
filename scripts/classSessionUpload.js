@@ -2,7 +2,6 @@ import mysql from 'mysql2/promise';
 import { createClient } from '@clickhouse/client';
 
 const CONFIG = {
-  serviceProviderId: 2087, //todo: add serviecprovider id
   dateFrom: process.env.DATE_FROM || null,
   dateTo: process.env.DATE_TO || null,
   batchSize: 2000
@@ -87,6 +86,97 @@ async function updateLastMigratedId(clickhouse, tableName, lastId) {
   console.log("Updated the last migrated ID");
 }
 
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT id as serviceProviderId
+    FROM serviceProvider
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+       -- Primary Keys
+    session_id UInt32,
+    class_id UInt32,
+    enrollment_id UInt32,
+    enrollment_session_id UInt32,
+    customer_id UInt32,
+    invoice_id UInt32,
+    
+    -- Service Provider & Location
+    service_provider_id UInt32,
+    location_id UInt32,
+    location_name String,
+    
+    -- Class Information
+    class_name String,
+    class_type_id UInt32,
+    class_type_name String,
+    class_category_id UInt32,
+    class_category_name String,
+    class_capacity UInt16,
+    class_status String,  -- 0=Inactive, 1=Active
+    class_enrollment_status String,  -- 1=Enrollment Open, 2=Do Not Publish, 3=Enrollment Closed
+    
+    -- Session Information
+    session_name String,
+    session_date Date,
+    session_start_time String,
+    session_end_time String,
+    session_duration String,
+    session_status String,  -- 1=Active, 0=Cancelled
+    is_parent_session UInt8,
+    
+    -- Instructor/Resource Information
+    resource_id UInt32,
+    resource_name String,
+    additional_resource_ids String,
+    
+    -- Customer/Member Information (Simplified)
+    customer_member_id UInt32,
+    member_name String,
+    customer_name String,  -- Combined first + last name
+    
+    -- Enrollment Details
+    enrollment_status String,  -- 0=Deleted, 1=Enrolled, 3=Waiting List
+    enrollment_quantity UInt16,
+    enrollment_creation_date DateTime,
+    booking_method String,  -- 1=Online, 2=PhoneIn, 3=WalkIn
+    payment_status UInt8,
+    payment_type_id UInt32,
+    is_checked_in UInt8,
+    
+    -- Financial Information (from invoice_items_detail)
+    item_price Decimal(10, 2),
+    quantity UInt16,
+    total_price Decimal(10, 2),
+    sale_discount Decimal(10, 2),
+    discount_amount Decimal(10, 2),
+    tax_amount Decimal(10, 2),
+    net_amount Decimal(10, 2),  -- total_price - sale_discount
+    
+    -- Promotion Information
+    promotion_id UInt32,
+    promotion_name String,
+    
+    -- Timestamps
+    invoice_created_at DateTime,
+    created_at DateTime DEFAULT now(),
+    updated_at DateTime DEFAULT now()
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(session_date)
+ORDER BY (service_provider_id, session_date, class_id, session_id)
+SETTINGS index_granularity = 8192;
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
 // Helper function to fetch data in batches and create lookup maps
 async function fetchLookupData(mysqlConnection, table, ids, idField = 'id') {
   if (!ids || ids.length === 0) return new Map();
@@ -146,18 +236,17 @@ async function fetchCustomerDetails(mysqlConnection, customerIds, serviceProvide
   return map;
 }
 
-export async function migrateClassSession(mysqlConnection, clickhouseClient, batchSize = 2000) {
-  const TABLE_KEY = "class_sessions";
+export async function migrateClassSession(mysqlConnection, clickhouseClient,serviceProviderId, batchSize = 2000) {
+  const TABLE_KEY = `class_sessions_${serviceProviderId}`;
   let lastId = await getLastMigratedId(clickhouseClient, TABLE_KEY);
   console.log(`▶ Resuming migration from class.id > ${lastId}`);
 
   // Step 1: First, get all valid class IDs that match our criteria
   console.log("⏳ Fetching valid class IDs...");
   let classWhereClause = `WHERE status > 0 AND id > ${lastId}`;
-  if (CONFIG.serviceProviderId) {
-    classWhereClause += ` AND serviceProviderId = ${CONFIG.serviceProviderId}`;
+  if (serviceProviderId) {
+    classWhereClause += ` AND serviceProviderId = ${serviceProviderId}`;
   }
-  
   const [validClasses] = await mysqlConnection.query(
     `SELECT id FROM class ${classWhereClause}`
   );
@@ -224,7 +313,7 @@ export async function migrateClassSession(mysqlConnection, clickhouseClient, bat
   // Filter classes by serviceProviderId and status
   const filteredClassesMap = new Map();
   for (const [id, cls] of classesMap) {
-    if (cls.status > 0 && cls.serviceProviderId === CONFIG.serviceProviderId) {
+    if (cls.status > 0 && cls.serviceProviderId === serviceProviderId) {
       filteredClassesMap.set(id, cls);
     }
   }
@@ -266,7 +355,7 @@ export async function migrateClassSession(mysqlConnection, clickhouseClient, bat
     fetchLookupData(mysqlConnection, 'classCategory', classCategoryIds),
     fetchLookupData(mysqlConnection, 'resource', resourceIds),
     fetchLookupData(mysqlConnection, 'location', locationIds),
-    fetchCustomerDetails(mysqlConnection, customerIds, CONFIG.serviceProviderId),
+    fetchCustomerDetails(mysqlConnection, customerIds, serviceProviderId),
     fetchLookupData(mysqlConnection, 'customerMembers', customerMemberIds),
     fetchLookupData(mysqlConnection, 'invoiceNew', invoiceIds),
     fetchInvoiceItems(mysqlConnection, invoiceIds, classIds)
@@ -381,9 +470,10 @@ export async function migrateClassSession(mysqlConnection, clickhouseClient, bat
     inserted += batch.length;
     console.log(`✔ Inserted ${inserted} of ${transformedRows.length}`);
   }
-
-  await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId);
+  if(transformedRows.length == inserted) {
+await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId);
   console.log(`✔ Migrated up to class ID: ${lastId}`);
+  }
   console.log(`\n🎉 Migration completed. Total inserted: ${inserted}`);
 }
 
@@ -403,7 +493,15 @@ async function migrateData() {
   });
 
   try {
-    await migrateClassSession(mysqlConn, clickhouse);
+     const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+       for (const providerId of providerIds) {
+      const tableName = `class_sessions_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+
+      await createInvoiceTable(clickhouse, tableName);
+        await migrateClassSession(mysqlConn, clickhouse, providerId);
+    }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();

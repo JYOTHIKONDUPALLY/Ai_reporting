@@ -2,7 +2,6 @@ import mysql from 'mysql2/promise';
 import { createClient } from '@clickhouse/client';
 
 const CONFIG = {
-    serviceProviderId: 2087,
     batchSize: 2000
 };
 
@@ -89,13 +88,103 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT serviceProviderId
+    FROM invoiceNew
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+         -- Primary Keys
+    session_id UInt32,
+    class_id UInt32,
+    enrollment_id UInt32,
+    enrollment_session_id UInt32,
+    customer_id UInt32,
+    invoice_id UInt32,
+    
+    -- Service Provider & Location
+    service_provider_id UInt32,
+    location_id UInt32,
+    location_name String,
+    
+    -- Class Information
+    class_name String,
+    class_type_id UInt32,
+    class_type_name String,
+    class_category_id UInt32,
+    class_category_name String,
+    class_capacity UInt16,
+    class_status String,  -- 0=Inactive, 1=Active
+    class_enrollment_status String,  -- 1=Enrollment Open, 2=Do Not Publish, 3=Enrollment Closed
+    
+    -- Session Information
+    session_name String,
+    session_date Date,
+    session_start_time String,
+    session_end_time String,
+    session_duration String,
+    session_status String,  -- 1=Active, 0=Cancelled
+    is_parent_session UInt8,
+    
+    -- Instructor/Resource Information
+    resource_id UInt32,
+    resource_name String,
+    additional_resource_ids String,
+    
+    -- Customer/Member Information (Simplified)
+    customer_member_id UInt32,
+    member_name String,
+    customer_name String,  -- Combined first + last name
+    
+    -- Enrollment Details
+    enrollment_status String,  -- 0=Deleted, 1=Enrolled, 3=Waiting List
+    enrollment_quantity UInt16,
+    enrollment_creation_date DateTime,
+    booking_method String,  -- 1=Online, 2=PhoneIn, 3=WalkIn
+    payment_status UInt8,
+    payment_type_id UInt32,
+    is_checked_in UInt8,
+    
+    -- Financial Information (from invoice_items_detail)
+    item_price Decimal(10, 2),
+    quantity UInt16,
+    total_price Decimal(10, 2),
+    sale_discount Decimal(10, 2),
+    discount_amount Decimal(10, 2),
+    tax_amount Decimal(10, 2),
+    net_amount Decimal(10, 2),  -- total_price - sale_discount
+    
+    -- Promotion Information
+    promotion_id UInt32,
+    promotion_name String,
+    
+    -- Timestamps
+    invoice_created_at DateTime,
+    created_at DateTime DEFAULT now(),
+    updated_at DateTime DEFAULT now()
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(session_date)
+ORDER BY (service_provider_id, session_date, class_id, session_id)
+SETTINGS index_granularity = 8192;
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
 /**
  * BATCH MIGRATION
  */
-async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
+async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchSize = 2000) {
     let offset = 0;
     let totalInserted = 0;
-    const TABLE_KEY = "customers";
+    const TABLE_KEY = `customers_${serviceProviderId}`;
     let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
         console.log(`▶ Resuming migration from customer.id > ${lastId}`);
         const [count]= await mysqlConn.execute(`
@@ -103,7 +192,7 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
             INNER JOIN serviceProviderCustomerDetails scd 
                 ON scd.customerId = c.id 
             WHERE scd.serviceProviderId = ? and c.id > ?
-        `, [CONFIG.serviceProviderId, lastId]);
+        `, [serviceProviderId, lastId]);
     const totalRecords = count[0].count;
     console.log(`📊 Total records to migrate: ${totalRecords}`);
 
@@ -120,7 +209,7 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
                 ON scd.customerId = c.id 
             WHERE scd.serviceProviderId = ? and c.id > ?
             LIMIT ? 
-        `, [CONFIG.serviceProviderId,lastId, batchSize]);
+        `, [serviceProviderId,lastId, batchSize]);
 
         if (rows.length === 0) {
             console.log("🎉 All customers fully migrated.");
@@ -210,10 +299,12 @@ async function migrateCustomers(mysqlConn, clickhouse, batchSize = 2000) {
         totalInserted += batchValues.length;
         offset += batchSize;
     }
-    await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+    if(totalRecords >0 && totalInserted == totalRecords){
+           await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
 console.log(`✔ Migrated up to ID: ${lastId}`);
+    console.log(`✅ TOTAL INSERTED INTO CLICKHOUSE: ${totalInserted}`); 
+    }
 
-    console.log(`✅ TOTAL INSERTED INTO CLICKHOUSE: ${totalInserted}`);
 }
 
 async function migrateData() {
@@ -223,14 +314,29 @@ async function migrateData() {
         password: 'my5qlskeedazz!!',
         database: 'bizzflo'
     });
+     console.log("✅ Connected to MySQL!");
+
+    const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
+    console.log("DB Time:", resultRows[0].now);
 
     const clickhouse = createClient({
-        url: "http://localhost:8123",
-        database: "clickHouseInvoice"
+      url: 'http://localhost:8123',
+    username: 'default',
+    password: '',
+    database: 'clickHouseInvoice',
     });
 
     try {
-        await migrateCustomers(mysqlConn, clickhouse);
+         const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+   for (const providerId of providerIds) {
+      const tableName = `customers_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+
+      await createInvoiceTable(clickhouse, tableName);
+       await migrateCustomers(mysqlConn, clickhouse, providerId);
+    }
+      
     } finally {
         await mysqlConn.end();
         await clickhouse.close();

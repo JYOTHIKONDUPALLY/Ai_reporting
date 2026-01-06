@@ -239,16 +239,89 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT id as serviceProviderId
+    FROM serviceProvider
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+        id UInt64,
+    franchise_id UInt64,
+    provider_id UInt64,
+    franchise String,
+    provider String,
+    status String,
+    -- Product details
+    name String,
+    sku String,
+    upc String,
+    serial String,
+    brand_id UInt64,
+    brand_name String,
+    productSerialization Int32,
+    department_id UInt32,
+    department_name String,
+    -- Categorization
+    category String,
+    sub_category String,
+    -- Pricing
+    avg_cost Decimal(10, 2),
+    avg_sell_price Decimal(10, 2),
+    avg_margin Decimal(10, 2),
+    margin Decimal(10, 2),
+    type_id UInt32,
+    type_name String,
+    case_cost Decimal(10, 2),
+    case_price Decimal(10, 2),
+    online String,
+     regular_price Decimal(10, 2),
+    sale_price Decimal(10, 2),
+    store_status String,
+    wholesale_price Decimal(10, 2),
+    stock_status String,
+    stock_quantity Int32,
+    price Decimal64(2),
+    cost Decimal64(2),
+    average_cost Decimal64(2),
+    -- Calculated fields
+    gross_profit_percent Decimal64(2),
+    extended_cost Decimal64(2),
+    extended_price Decimal64(2),
+    -- Inventory quantities
+    qoh Int32,  -- Quantity on Hand
+    rental Int32,
+    qor Int32,  -- Quantity on Reserved
+    qoo Int32,  -- Quantity on Order
+    reorderLevel Int32,
+    -- Audit fields
+    created_at DateTime DEFAULT now(),
+    updated_at DateTime DEFAULT now()
+) ENGINE = MergeTree()
+ORDER BY ( id)
+PARTITION BY toYYYYMM(created_at)
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
 /**
  * Main migration function
  */
-async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) {
+async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,batchSize = 1000) {
   
   try {
-    const TABLE_KEY = "product_inventory";
+    const TABLE_KEY = `product_inventory_${serviceProviderId}`;
     let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
         console.log(`▶ Resuming migration from product.id > ${lastId}`);
-    const serviceProviderId = 2087; // Use the same ID for query and stats
+ // Use the same ID for query and stats
 
     // Get total count
     const [countResult] = await mysqlConn.execute(
@@ -429,7 +502,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) 
         const chunk = processedData.slice(i, i + CHUNK_SIZE);
         try {
           await clickhouse.insert({
-            table: 'product_inventory',
+            table: TABLE_KEY,
             values: chunk,
             format: 'JSONEachRow'
           });
@@ -445,9 +518,15 @@ async function migrateProductInventory(mysqlConn, clickhouse, batchSize = 1000) 
       offset += batchSize;
       console.log(`➡️ Progress: Migrated=${totalMigrated}, Errors=${totalErrors}`);
     }
-
+if((totalMigrated > 0 && totalErrors === 0)){
      await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
 console.log(`✔ Migrated up to ID: ${lastId}`);
+}else if(totalErrors==0 && totalMigrated==0){
+  console.log(`✔ No records found`);
+}else{
+console.log(`❌ Migration failed with ${totalErrors} errors:`, errors);
+      return { success: false, totalRecords, migrated: totalMigrated, errors: totalErrors };
+    }
     console.log(`\n🏁 Migration finished: ${totalMigrated} migrated, ${totalErrors} errors`);
     
     if (errors.length > 0) {
@@ -481,6 +560,11 @@ async function migrateData() {
     database: 'bizzflo'
   });
 
+  console.log("✅ Connected to MySQL!");
+
+    const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
+    console.log("DB Time:", resultRows[0].now);
+
   const clickhouse = createClient({
     url: 'http://localhost:8123',
     username: 'default',
@@ -489,7 +573,14 @@ async function migrateData() {
   });
 
   try {
-    await migrateProductInventory(mysqlConn, clickhouse);
+    const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+       for (const providerId of providerIds) {
+      const tableName = `product_inventory_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+      await createInvoiceTable(clickhouse, tableName);
+    await migrateProductInventory(mysqlConn, clickhouse, providerId);
+       }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();

@@ -89,13 +89,64 @@ await clickhouse.insert({
   console.log("updated the last migrated id");
 }
 
-async function migrateInvoices(mysqlConn, clickhouse, batchSize = 2000) {
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT serviceProviderId
+    FROM invoiceNew
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+        id UInt64,
+        invoice_date Date,
+        customer_name String,
+        customer_id UInt64,
+        customer_email String,
+        is_member Enum8('no' = 0, 'yes' = 1),
+        company String,
+        sales_clerk String,
+        commission_clerk String,
+        resource String,
+        pos_terminal String,
+        pos_terminal_id UInt64,
+        retail_discount Decimal(12, 2),
+        tax Decimal(12, 2),
+        total_amount Decimal(12, 2),
+        franchise String,
+        franchise_id UInt64,
+        provider String,
+        provider_id UInt64,
+        location String,
+        location_id UInt64,
+        parent_invoice_id UInt64,
+        invoice_number String,
+        due_date Date,
+        status String,
+        booking_type String,
+        notes String,
+        created_at DateTime,
+        updated_at DateTime
+    )
+    ENGINE = MergeTree
+    ORDER BY id
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
+async function migrateInvoices(mysqlConn, clickhouse, serviceProviderId, batchSize = 2000) {
   try {
-    const TABLE_KEY = "invoice_details";
+    const TABLE_KEY = `invoice_details_${serviceProviderId}`;
     let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
         console.log(`▶ Resuming migration from invoiceNew.id > ${lastId}`);
 
-    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceNew where serviceProviderId in (22) and status=1 and invoiceNew.id > ${lastId}`);
+    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceNew where serviceProviderId = ${serviceProviderId} and status=1 and invoiceNew.id > ${lastId}`);
     const totalRecords = countResult[0].total;
     console.log(`📊 Total records to migrate: ${totalRecords}`);
 
@@ -115,7 +166,7 @@ async function migrateInvoices(mysqlConn, clickhouse, batchSize = 2000) {
           resourceId, loggedinUserId, locationId, invoiceDate, status, price, discount, 
           grandTotal, dueDate, posTerminalId, notes, parentInvoiceId, tax, bookingType
         FROM invoiceNew
-         where invoiceNew.serviceProviderId = 22 and status=1 and invoiceNew.id > ${lastId}
+         where invoiceNew.serviceProviderId = ${serviceProviderId} and status=1 and invoiceNew.id > ${lastId}
         ORDER BY id
         LIMIT ${batchSize}
       `);
@@ -214,7 +265,7 @@ async function migrateInvoices(mysqlConn, clickhouse, batchSize = 2000) {
         const chunk = processedData.slice(i, i + CHUNK_SIZE);
         try {
           await clickhouse.insert({
-            table: 'invoice_details',
+            table: TABLE_KEY,
             values: chunk,
             format: 'JSONEachRow'
           });
@@ -230,8 +281,15 @@ async function migrateInvoices(mysqlConn, clickhouse, batchSize = 2000) {
       offset += batchSize;
       console.log(`➡️ Progress: Migrated=${totalMigrated}, Errors=${totalErrors}`);
     }
-    await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalMigrated);
+    if((totalMigrated > 0 && totalErrors === 0)){
+      await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalMigrated);
 console.log(`✔ Migrated up to ID: ${lastId}`);
+      
+    }else{
+console.log(`❌ Migration failed with ${totalErrors} errors:`, errors);
+      return { success: false, totalRecords, migrated: totalMigrated, errors: totalErrors };
+    }
+    
     console.log(`\n🏁 Migration finished: ${totalMigrated} migrated, ${totalErrors} errors`);
     return { success: totalErrors === 0, totalRecords, migrated: totalMigrated, errors: totalErrors };
   } catch (err) {
@@ -264,7 +322,15 @@ async function migrateData() {
   });
 
   try {
-    await migrateInvoices(mysqlConn, clickhouse);
+     const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+   for (const providerId of providerIds) {
+      const tableName = `invoice_details_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+
+      await createInvoiceTable(clickhouse, tableName);
+      await migrateInvoices(mysqlConn, clickhouse, providerId);
+    }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();

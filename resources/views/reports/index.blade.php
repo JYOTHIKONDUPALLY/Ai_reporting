@@ -1579,7 +1579,6 @@ function renderTable(data) {
 
 // Render chart - IMPROVED to handle AI queries
 function renderChart(data, reportKey, chartType = 'line') {
-  console.log("chartdata", data);
   if (!data || data.length === 0) {
     showChartMessage('No data available to create chart.');
     return;
@@ -1863,18 +1862,15 @@ document.getElementById('applyDateFilter')?.addEventListener('click', function(e
     alert('Please select a complete date range (start and end dates)');
     return;
   }
-  
   const selectedDates = dateRangePicker.selectedDates;
-  const start = selectedDates[0].toISOString().split('T')[0];
-  const end = selectedDates[1].toISOString().split('T')[0];
-  
+  const start = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
+const end = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
   // Update hidden inputs in Ask AI form
   const chatStartDate = document.getElementById('chatStartDate');
   const chatEndDate = document.getElementById('chatEndDate');
   
   if (chatStartDate) chatStartDate.value = start;
   if (chatEndDate) chatEndDate.value = end;
-  
   // Check if we have a current report key
   const currentReportKey = sessionStorage.getItem('currentReportKey');
   const predefinedType = @json(isset($predefinedType) ? $predefinedType : null);

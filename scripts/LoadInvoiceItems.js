@@ -213,10 +213,60 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT serviceProviderId
+    FROM invoiceItemNew
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
 
-async function migrateInvoiceItems(mysqlConn, clickhouse, batchSize = 1000) {
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+        id UInt64,
+    invoice_id UInt64 NOT NULL,
+    item_type String,
+    item_type_id UInt64,
+    category String,
+    subcategory String,
+    brand String,
+    department String,
+    SKU String,
+    UPC String,
+    item_id UInt64,
+    item_name String,
+    COGS UInt64,
+    Commission String,
+    co_faet_tax UInt64 DEFAULT 0,
+    guest_pass_discount UInt64 DEFAULT 0,
+    membership_discount UInt64 DEFAULT 0,
+    package_discount UInt64 DEFAULT 0,
+    refund_amount UInt64 DEFAULT 0,
+    refund_co_faet_tax UInt64 DEFAULT 0,
+    refund_tax UInt64 DEFAULT 0,
+    quantity Int32 DEFAULT 1,
+    unit_price Decimal(12,2),
+    discount_value Decimal(12,2) DEFAULT 0.00,
+    discount_amount Decimal(12,2) DEFAULT 0.00,
+    tax_rate Decimal(5,2),
+    total_price Decimal(12,2) DEFAULT 0.00,
+    created_at DateTime,
+    updated_at DateTime
+) ENGINE = MergeTree()
+ORDER BY (invoice_id, id);
+  `;
 
-const TABLE_KEY = "invoice_items_detail";
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
+
+async function migrateInvoiceItems(mysqlConn, clickhouse,serviceProviderId, batchSize = 1000) {
+
+const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
 
   const safeNum = (v, def = 0) =>
     v === null || v === undefined || v === '' || isNaN(Number(v)) ? def : Number(v);
@@ -258,7 +308,7 @@ const TABLE_KEY = "invoice_items_detail";
     const subCategoryMap = new Map(subcategories.map(s => [s.name.toLowerCase(), s.id]));
 
     // Count total rows
-    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceItemNew where serviceProviderId = 2087 AND invoiceItemNew.id > ${lastId}`);
+    const [countResult] = await mysqlConn.execute(`SELECT COUNT(*) as total FROM invoiceItemNew where serviceProviderId = ${serviceProviderId} AND invoiceItemNew.id > ${lastId}`);
     const totalRecords = countResult[0].total;
     console.log(`Total invoice items to migrate: ${totalRecords}`);
 
@@ -267,7 +317,7 @@ const TABLE_KEY = "invoice_items_detail";
       const [rows] = await mysqlConn.execute(
         `SELECT i.*
          FROM invoiceItemNew i
-         where i.serviceProviderId = 2087
+         where i.serviceProviderId = ${serviceProviderId}
          AND i.id > ${lastId}
          ORDER BY i.id
          LIMIT ${batchSize}`
@@ -356,7 +406,7 @@ const TABLE_KEY = "invoice_items_detail";
           unit_price: safeNum(r.price),
           discount_amount: safeNum(r.discount),
           discount_value: safeNum(r.saleDiscount || r.discount),
-          tax_rate: safeNum(r.tax || r.GST || r.PST || r.HST || r.QST),
+          tax_rate: safeNum(r.tax || r.GST || r.PST || r.HST || r.QST).toFixed(2),
           total_price: safeNum(r.totalPrice),
           resource_id: r.resourceId || 0,
           department_id: r.departmentId || 0,
@@ -378,7 +428,7 @@ const TABLE_KEY = "invoice_items_detail";
       if (data.length > 0) {
         try {
           await clickhouse.insert({
-            table: 'invoice_items_detail',
+            table: TABLE_KEY,
             values: data,
             format: 'JSONEachRow',
           });
@@ -388,7 +438,7 @@ const TABLE_KEY = "invoice_items_detail";
           for (const rec of data) {
             try {
               await clickhouse.insert({
-                table: 'invoice_items_detail',
+                table: TABLE_KEY,
                 values: [rec],
                 format: 'JSONEachRow',
               });
@@ -421,6 +471,10 @@ async function migrateData() {
     database: 'bizzflo'   // your DB name
   });
 
+   console.log("✅ Connected to MySQL!");
+    const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
+    console.log("DB Time:", resultRows[0].now);
+
   const clickhouse = createClient({
     url: 'http://localhost:8123',
     username: 'default',
@@ -429,7 +483,15 @@ async function migrateData() {
   });
 
   try {
-    await migrateInvoiceItems(mysqlConn, clickhouse);
+     const providerIds = await getDistinctServiceProviders(mysqlConn);
+      console.log(`🔑 Found ${providerIds.length} service providers`);
+       for (const providerId of providerIds) {
+      const tableName = `invoice_items_detail_${providerId}`;
+      console.log(`\n🚀 Migrating provider ${providerId}`);
+
+      await createInvoiceTable(clickhouse, tableName);
+    await migrateInvoiceItems(mysqlConn, clickhouse, providerId);
+       }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();
