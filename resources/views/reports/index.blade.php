@@ -1438,10 +1438,7 @@ function renderPagination(totalRows) {
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const paginationContainer = document.getElementById('paginationControls');
   
-  if (!paginationContainer || totalPages <= 1) {
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
+  if (!paginationContainer) return;
 
   // Calculate display range
   const startRow = (currentPage - 1) * rowsPerPage + 1;
