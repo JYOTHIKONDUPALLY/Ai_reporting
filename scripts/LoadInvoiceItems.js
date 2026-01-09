@@ -1,6 +1,92 @@
 import mysql from 'mysql2/promise';
 import { createClient } from '@clickhouse/client';
 
+async function getLastMigratedId(clickhouse, tableName) {
+  const result = await clickhouse.query({
+    query: `SELECT last_migrated_id 
+            FROM migration_progress 
+            WHERE table_name = {table_name:String}
+            order by updated_at desc 
+            LIMIT 1`,
+    format: 'JSONEachRow',
+    query_params: { table_name: tableName }
+  });
+
+  const rows = await result.json();
+
+  return rows.length ? rows[0].last_migrated_id : 0;
+}
+
+async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
+
+  if (totalRecords > 0) {
+    await clickhouse.insert({
+      table: 'migration_progress',
+      values: [{
+        table_name: tableName,
+        last_migrated_id: lastId,
+        updated_at: new Date().toISOString().slice(0, 19).replace("T", " ")
+      }],
+      format: 'JSONEachRow'
+    });
+  }
+
+  console.log("updated the last migrated id");
+}
+
+async function getDistinctServiceProviders(mysqlConn) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT DISTINCT serviceProviderId
+    FROM invoiceItemNew
+    WHERE status = 1
+  `);
+  return rows.map(r => r.serviceProviderId);
+}
+
+async function createInvoiceTable(clickhouse, tableName) {
+  const createQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName}
+    (
+        id UInt64,
+    invoice_id UInt64 NOT NULL,
+    item_type_raw String,
+    item_type String,
+    item_type_id UInt64,
+    category String,
+    subcategory String,
+    brand String,
+    department String,
+    SKU String,
+    UPC String,
+    item_id UInt64,
+    item_name String,
+    invoice_item_name String,
+    COGS UInt64,
+    Commission String,
+    co_faet_tax UInt64 DEFAULT 0,
+    guest_pass_discount UInt64 DEFAULT 0,
+    membership_discount UInt64 DEFAULT 0,
+    package_discount UInt64 DEFAULT 0,
+    refund_amount UInt64 DEFAULT 0,
+    refund_co_faet_tax UInt64 DEFAULT 0,
+    refund_tax UInt64 DEFAULT 0,
+    quantity Int32 DEFAULT 1,
+    unit_price Decimal(12,2),
+    discount_value Decimal(12,2) DEFAULT 0.00,
+    discount_amount Decimal(12,2) DEFAULT 0.00,
+    tax_rate Decimal(5,2),
+    total_price Decimal(12,2) DEFAULT 0.00,
+    created_at DateTime,
+    updated_at DateTime
+) ENGINE = MergeTree()
+ORDER BY (invoice_id, id);
+  `;
+
+  await clickhouse.exec({ query: createQuery });
+  console.log(`📦 Table ready: ${tableName}`);
+}
+
+
 
 /**
  * Get category & subcategory for an item
@@ -179,99 +265,128 @@ async function getCategoryAndSubcategory(type, itemId, mysqlConn) {
   return { category, subcategory };
 }
 
+async function deriveItemName(type, itemId, rawName, mysqlConn) {
+  if (!type || !itemId) return removeItemPrefix(rawName);
 
-async function getLastMigratedId(clickhouse, tableName) {
-   const result = await clickhouse.query({
-    query: `SELECT last_migrated_id 
-            FROM migration_progress 
-            WHERE table_name = {table_name:String}
-            order by updated_at desc 
-            LIMIT 1`,
-    format: 'JSONEachRow',
-    query_params: { table_name: tableName }
-  });
+  switch (type.toLowerCase()) {
 
-  const rows = await result.json();
+    case "service":
+    case "appointment":
+    case "advancebookingfee": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM service WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
 
-  return rows.length ? rows[0].last_migrated_id : 0;
-}
+    case "class":
+    case "classes": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM class WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
 
-async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords) {
-  
-  if(totalRecords >0){
-     await clickhouse.insert({
-    table: 'migration_progress',
-    values: [{
-      table_name: tableName,
-      last_migrated_id: lastId,
-      updated_at: new Date().toISOString().slice(0, 19).replace("T"," ")
-    }],
-    format: 'JSONEachRow'
-  });
+    case "package":
+    case "packages": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM package WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
+
+    case "membership":
+    case "memberships":
+    case "membershipregistrationfee": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM membership WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
+
+    case "product":
+    case "membershiprental": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM product WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
+
+    case "rental": {
+      const [[rental]] = await mysqlConn.execute(
+        "SELECT productId FROM rentalItems WHERE id = ?",
+        [itemId]
+      );
+      if (rental?.productId) {
+        const [[prod]] = await mysqlConn.execute(
+          "SELECT name FROM product WHERE id = ?",
+          [rental.productId]
+        );
+        return prod?.name || removeItemPrefix(rawName);
+      }
+      return removeItemPrefix(rawName);
+    }
+
+    case "giftcard": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM giftCard WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
+
+    case "warranty": {
+      const [[row]] = await mysqlConn.execute(
+        "SELECT name FROM warranty WHERE id = ?",
+        [itemId]
+      );
+      return row?.name || removeItemPrefix(rawName);
+    }
+
+    case "tradein":
+      return "Trade-in";
+
+    case "forfeiteddeposit":
+      return "Forfeited Deposit";
+
+    default:
+      if (type.toLowerCase().startsWith("misc")) {
+        return "Miscellaneous Item";
+      }
+      return removeItemPrefix(rawName);
   }
-
-  console.log("updated the last migrated id");
 }
 
-async function getDistinctServiceProviders(mysqlConn) {
-  const [rows] = await mysqlConn.execute(`
-    SELECT DISTINCT serviceProviderId
-    FROM invoiceItemNew
-    WHERE status = 1
-  `);
-  return rows.map(r => r.serviceProviderId);
-}
+function normalizeItemType(type) {
+  if (!type) return type;
 
-async function createInvoiceTable(clickhouse, tableName) {
-  const createQuery = `
-    CREATE TABLE IF NOT EXISTS ${tableName}
-    (
-        id UInt64,
-    invoice_id UInt64 NOT NULL,
-    item_type String,
-    item_type_id UInt64,
-    category String,
-    subcategory String,
-    brand String,
-    department String,
-    SKU String,
-    UPC String,
-    item_id UInt64,
-    item_name String,
-    COGS UInt64,
-    Commission String,
-    co_faet_tax UInt64 DEFAULT 0,
-    guest_pass_discount UInt64 DEFAULT 0,
-    membership_discount UInt64 DEFAULT 0,
-    package_discount UInt64 DEFAULT 0,
-    refund_amount UInt64 DEFAULT 0,
-    refund_co_faet_tax UInt64 DEFAULT 0,
-    refund_tax UInt64 DEFAULT 0,
-    quantity Int32 DEFAULT 1,
-    unit_price Decimal(12,2),
-    discount_value Decimal(12,2) DEFAULT 0.00,
-    discount_amount Decimal(12,2) DEFAULT 0.00,
-    tax_rate Decimal(5,2),
-    total_price Decimal(12,2) DEFAULT 0.00,
-    created_at DateTime,
-    updated_at DateTime
-) ENGINE = MergeTree()
-ORDER BY (invoice_id, id);
-  `;
+  const t = type.toLowerCase();
+  if(t === 'appointment') return 'service';
+  if (t === 'advancebookingfee') return 'service';
+  if (t === 'classes') return 'class';
+  if (t === 'packages') return 'package';
+  if (t === 'membershipregistrationfee') return 'membership';
 
-  await clickhouse.exec({ query: createQuery });
-  console.log(`📦 Table ready: ${tableName}`);
+  if (t.startsWith('misc')) return 'misc';
+
+  return t;
 }
 
 
-async function migrateInvoiceItems(mysqlConn, clickhouse,serviceProviderId, batchSize = 1000) {
 
-const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
+async function migrateInvoiceItems(mysqlConn, clickhouse, serviceProviderId, batchSize = 1000) {
+
+  const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
 
   const safeNum = (v, def = 0) =>
     v === null || v === undefined || v === '' || isNaN(Number(v)) ? def : Number(v);
   const safeStr = (v, def = '') => (v === null || v === undefined ? def : String(v));
-  
+
   // Remove prefixes from item names (e.g., "product: ", "service: ", etc.)
   function removeItemPrefix(name) {
     if (!name) return name;
@@ -295,8 +410,8 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
 
   try {
 
-      let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
-        console.log(`▶ Resuming migration from invoiceItemNew.id > ${lastId}`);
+    let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
+    console.log(`▶ Resuming migration from invoiceItemNew.id > ${lastId}`);
 
     // ✅ Preload brand/category/subcategory mappings
     const [brands] = await mysqlConn.execute(`SELECT id, name FROM productBrand`);
@@ -332,6 +447,15 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
         let brandName = "N/A";
         let skuValue = null;
         let upcValue = null;
+        const rawInvoiceItemName = safeStr(r.itemName);
+
+        const normalizedType = normalizeItemType(r.type);
+        const derivedItemName = await deriveItemName(
+          normalizedType,
+          r.itemId,
+          rawInvoiceItemName,
+          mysqlConn
+        );
 
         if (r.type === "product" && r.itemId) {
           const [[productRow]] = await mysqlConn.execute(
@@ -350,11 +474,11 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
             }
           }
 
-          
+
         }
 
         // --- category/subcategory ---
-        const categoryData = await getCategoryAndSubcategory(r.type, r.itemId, mysqlConn);
+        const categoryData = await getCategoryAndSubcategory(normalizedType, r.itemId, mysqlConn);
 
         // --- discounts ---
         async function calcRedeemDiscount(type) {
@@ -380,21 +504,23 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
         const membershipDiscount = await calcRedeemDiscount("membershipRedeem");
         const packageDiscount = await calcRedeemDiscount("packageRedeem");
         const guestpassDiscount = await calcRedeemDiscount("guestpassRedeem");
-      const [CogsData] = await mysqlConn.execute(
-    `SELECT c.cogs, c.commission 
+        const [CogsData] = await mysqlConn.execute(
+          `SELECT c.cogs, c.commission 
      FROM cashSaleInvoice c 
      WHERE c.invoiceItemId = ?`,
-    [r.id]
-  );
+          [r.id]
+        );
 
-  const { Cogs, Commission } = CogsData[0] || {};
+        const { Cogs, Commission } = CogsData[0] || {};
 
         // --- build record ---
         data.push({
           id: r.id,
           invoice_id: r.invoiceId,
           item_type_id: r.itemTypeId || 0,
-          item_type: r.type,
+          item_type_raw: r.type,
+          item_type: normalizedType,
+
           category: categoryData.category || "N/A",
           sub_category: categoryData.subcategory || "N/A",
           brand: brandName,
@@ -402,6 +528,8 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
           UPC: upcValue || null,
           item_id: r.itemId,
           item_name: removeItemPrefix(safeStr(r.itemName)),
+          invoice_item_name: rawInvoiceItemName,
+          item_name: derivedItemName,
           quantity: safeNum(r.qty),
           unit_price: safeNum(r.price),
           discount_amount: safeNum(r.discount),
@@ -416,7 +544,7 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
           guest_pass_discount: guestpassDiscount,
           membership_discount: membershipDiscount,
           package_discount: packageDiscount,
-          refund_amount: r.refund_amount<0 ? 0 : Math.round(safeNum(r.returnAmount || r.totalReturnAmount)),
+          refund_amount: r.refund_amount < 0 ? 0 : Math.round(safeNum(r.returnAmount || r.totalReturnAmount)),
           refund_tax: Math.round(safeNum(r.taxReturnAmount)),
           refund_co_faet_tax: safeNum(r.pifTaxReturnAmount),
           created_at: formatDate(r.createdDate),
@@ -452,8 +580,8 @@ const TABLE_KEY = `invoice_items_detail_${serviceProviderId}`;
       offset += batchSize;
     }
 
-await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
-console.log(`✔ Migrated up to ID: ${lastId}`);
+    await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
+    console.log(`✔ Migrated up to ID: ${lastId}`);
 
     console.log('🎉 Invoice items migration completed!');
   } catch (err) {
@@ -471,9 +599,9 @@ async function migrateData() {
     database: 'bizzflo'   // your DB name
   });
 
-   console.log("✅ Connected to MySQL!");
-    const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
-    console.log("DB Time:", resultRows[0].now);
+  console.log("✅ Connected to MySQL!");
+  const [resultRows] = await mysqlConn.execute('SELECT NOW() AS now');
+  console.log("DB Time:", resultRows[0].now);
 
   const clickhouse = createClient({
     url: 'http://localhost:8123',
@@ -483,15 +611,15 @@ async function migrateData() {
   });
 
   try {
-     const providerIds = await getDistinctServiceProviders(mysqlConn);
-      console.log(`🔑 Found ${providerIds.length} service providers`);
-       for (const providerId of providerIds) {
+    const providerIds = await getDistinctServiceProviders(mysqlConn);
+    console.log(`🔑 Found ${providerIds.length} service providers`);
+    for (const providerId of providerIds) {
       const tableName = `invoice_items_detail_${providerId}`;
       console.log(`\n🚀 Migrating provider ${providerId}`);
 
       await createInvoiceTable(clickhouse, tableName);
-    await migrateInvoiceItems(mysqlConn, clickhouse, providerId);
-       }
+      await migrateInvoiceItems(mysqlConn, clickhouse, providerId);
+    }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();

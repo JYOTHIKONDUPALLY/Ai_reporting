@@ -5,7 +5,7 @@ import { createClient } from '@clickhouse/client';
  * Formats a value into ClickHouse DateTime string
  */
 function formatDate(dateValue) {
-  if (!dateValue) return '1970-01-01 00:00:00';
+  if (!dateValue) return null;
 
   let date;
   try {
@@ -19,7 +19,7 @@ function formatDate(dateValue) {
         date = new Date(dateStr);
       }
     }
-    if (isNaN(date.getTime())) return '1970-01-01 00:00:00';
+    if (isNaN(date.getTime())) return null;
 
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -29,7 +29,7 @@ function formatDate(dateValue) {
     const s = String(date.getSeconds()).padStart(2, '0');
     return `${y}-${m}-${d} ${h}:${mi}:${s}`;
   } catch {
-    return '1970-01-01 00:00:00';
+    return null;
   }
 }
 
@@ -37,104 +37,110 @@ function formatDate(dateValue) {
  * Get serial numbers for a product
  */
 async function getSerialNumbers(mysqlConn, productId) {
-  try {
-    const query = `
-      SELECT ps.serialNumber
-      FROM productInventorySerialNumbers ps
-      JOIN productInventory pi ON ps.inventoryId = pi.id
-      WHERE pi.status = 1
-        AND ps.productId = ?
-        AND ps.status = 1
-        AND ps.inventoryStatus NOT IN (
-          'SOLD','TRANSFER','TRANSFER-FFL','TRANSFER-C',
-          'REPAIRED','INACTIVE','DESTROYED','LOST OR STOLEN',
-          'External Repair Out','CANCELED'
-        )
-    `;
-    
-    const [rows] = await mysqlConn.execute(query, [productId]);
-    return rows.map(r => r.serialNumber).join(', ') || 'N/A';
-  } catch (err) {
+  try{
+  const [rows] = await mysqlConn.execute(`
+    SELECT ps.serialNumber
+    FROM productInventorySerialNumbers ps
+    JOIN productInventory pi ON pi.id = ps.inventoryId
+    WHERE pi.status = 1
+      AND ps.productId = ?
+      AND ps.status = 1
+      AND ps.inventoryStatus NOT IN (
+        'SOLD','TRANSFER','TRANSFER-FFL','TRANSFER-C',
+        'REPAIRED','INACTIVE','DESTROYED','LOST OR STOLEN',
+        'External Repair Out','CANCELED'
+      )
+  `, [productId]);
+
+  return rows.map(r => r.serialNumber).join(', ') || 'N/A';
+}catch (err) {
     console.error(`Error fetching serial numbers for product ${productId}:`, err.message);
     return 'N/A';
   }
 }
 
+/**
+ * Inventory created date (PHP-equivalent)
+ */
+async function getInventoryCreatedDate(mysqlConn, productId) {
+  const [rows] = await mysqlConn.execute(`
+    SELECT MIN(ps.createdDate) AS inventoryCreatedDate
+    FROM productInventorySerialNumbers ps
+    JOIN productInventory pi ON pi.id = ps.inventoryId
+    WHERE pi.productId = ?
+      AND ps.status = 1
+  `, [productId]);
+
+  return rows[0]?.inventoryCreatedDate || null;
+}
+
+/**
+ * Product stats (PHP aligned)
+ */
 async function getProductStats(mysqlConn, productId, serviceProviderId) {
-  try {
-    // 1. Fetch base product data
-    const [products] = await mysqlConn.execute(
-      `SELECT id, avgCost, wholeSalePrice, salePrice, regularPrice
-       FROM product
-       WHERE id = ? AND serviceProviderId = ?`,
-      [productId, serviceProviderId]
-    );
+  try{
+  const [products] = await mysqlConn.execute(`
+    SELECT avgCost, wholeSalePrice, salePrice, regularPrice
+    FROM product
+    WHERE id = ? AND serviceProviderId = ?
+  `, [productId, serviceProviderId]);
 
-    if (products.length === 0) {
-      return {
-        qoh: 0, qor: 0, rental: 0, qoo: 0,
-        avgCost: 0, salePrice: 0,
-        grossProfitPercent: 0, extendedCost: 0, extendedPrice: 0
-      };
+  if (!products.length) {
+    return { qoh: 0, qor: 0, qoo: 0, avgCost: 0, salePrice: 0,rental: 0,grossProfitPercent: 0, extendedCost: 0, extendedPrice: 0, inventoryId: 0 };
+  }
+
+  const product = products[0];
+  const salePrice = product.salePrice || product.regularPrice || 0;
+  const avgCost = product.avgCost > 0 ? product.avgCost : product.wholeSalePrice || 0;
+
+  const [inventory] = await mysqlConn.execute(`
+    SELECT ps.inventoryStatus, ps.inventoryId
+    FROM productInventorySerialNumbers ps
+    JOIN productInventory pi ON pi.id = ps.inventoryId
+    WHERE pi.productId = ?
+      AND pi.status = 1
+      AND ps.status = 1
+      AND ps.inventoryStatus NOT IN (
+        'SOLD','TRANSFER','TRANSFER-FFL','TRANSFER-C',
+        'REPAIRED','INACTIVE','DESTROYED','LOST OR STOLEN',
+        'External Repair Out','CANCELED'
+      )
+  `, [productId]);
+
+  let qoh = 0;
+  let qor = 0;
+  let inventoryId = 0;
+
+  inventory.forEach(row => {
+    if (!inventoryId) inventoryId = row.inventoryId;
+    if (row.inventoryStatus === 'Reserved For Layaway' || row.inventoryStatus === 'RESERVED') {
+      qor++;
+    } else if (row.inventoryStatus === 'RENTAL') {
+      rental++;
+    } else {
+      qoh++;
     }
+  });
 
-    const product = products[0];
-    const salePrice = product.salePrice || product.regularPrice || 0;
-    const avgCost = product.avgCost > 0 ? product.avgCost : product.wholeSalePrice || 0;
+  const qoo = await getQuantityOnOrder(mysqlConn, productId, null, inventoryId);
 
-    // 2. Fetch inventory records and calculate quantities
-    const [inventory] = await mysqlConn.execute(
-      `SELECT ps.inventoryStatus, ps.inventoryId
-       FROM productInventorySerialNumbers ps
-       JOIN productInventory pi ON ps.inventoryId = pi.id
-       WHERE pi.productId = ?
-         AND pi.status = 1
-         AND ps.status = 1
-         AND ps.inventoryStatus NOT IN (
-           'SOLD','TRANSFER','TRANSFER-FFL','TRANSFER-C',
-           'REPAIRED','INACTIVE','DESTROYED','LOST OR STOLEN',
-           'External Repair Out','CANCELED'
-         )`,
-      [productId]
-    );
+  const grossProfitPercent = salePrice > 0
+    ? ((salePrice - product.wholeSalePrice) / salePrice) * 100
+    : 0;
 
-    let qoh = 0, qor = 0, rental = 0;
-    let inventoryId = null;
-    
-    inventory.forEach(row => {
-      if (row.inventoryStatus === 'Reserved For Layaway' || row.inventoryStatus === 'RESERVED') {
-        qor++;
-      } else if (row.inventoryStatus === 'RENTAL') {
-        rental++;
-      } else {
-        qoh++;
-      }
-      if (!inventoryId) {
-        inventoryId = row.inventoryId;
-      }
-    });
+  const extendedCost = (qoh + qor) * avgCost;
+  const extendedPrice = (qoh + qor) * salePrice;
 
-    // 3. Get Quantity on Order (QoO)
-    const qoo = await getQuantityOnOrder(mysqlConn, productId, null, inventoryId);
-
-    // 4. Calculations
-    const grossProfitPercent = salePrice > 0
-      ? ((salePrice - product.wholeSalePrice) / salePrice) * 100
-      : 0;
-
-    const extendedCost = (qoh + qor) * avgCost;
-    const extendedPrice = (qoh + qor) * salePrice;
-
-    return {
-      qoh,
-      qor,
-      rental,
-      qoo,
-      avgCost,
-      salePrice,
-      grossProfitPercent: parseFloat(grossProfitPercent.toFixed(2)),
-      extendedCost: parseFloat(extendedCost.toFixed(2)),
-      extendedPrice: parseFloat(extendedPrice.toFixed(2))
+  return {
+    qoh,
+    qor,
+    rental,
+    qoo,
+    avgCost,
+    salePrice,
+    grossProfitPercent: Number(grossProfitPercent.toFixed(2)),
+    extendedCost: Number(extendedCost.toFixed(2)),
+    extendedPrice: Number(extendedPrice.toFixed(2)), inventoryId
     };
   } catch (err) {
     console.error(`Error getting product stats for ${productId}:`, err.message);
@@ -150,10 +156,10 @@ async function getQuantityOnOrder(mysqlConn, productId, poItemId = null, invento
   let sql = `
     SELECT pi.id, pi.orderedQuantity, pi.receivedQuantity
     FROM poItems pi
-    INNER JOIN purchaseOrder p ON pi.poId = p.id
+    JOIN purchaseOrder p ON p.id = pi.poId
     WHERE pi.productId = ?
-      AND p.status = 1
       AND pi.status = 1
+      AND p.status = 1
   `;
   
   const params = [productId];
@@ -271,9 +277,9 @@ async function createInvoiceTable(clickhouse, tableName) {
     -- Categorization
     category String,
     sub_category String,
-    -- Pricing
-    avg_cost Decimal(10, 2),
     avg_sell_price Decimal(10, 2),
+        productInventoryId UInt64,           
+        inventoryCreatedDate Nullable (DateTime),     
     avg_margin Decimal(10, 2),
     margin Decimal(10, 2),
     type_id UInt32,
@@ -289,26 +295,26 @@ async function createInvoiceTable(clickhouse, tableName) {
     stock_quantity Int32,
     price Decimal64(2),
     cost Decimal64(2),
+    
     average_cost Decimal64(2),
-    -- Calculated fields
-    gross_profit_percent Decimal64(2),
-    extended_cost Decimal64(2),
-    extended_price Decimal64(2),
-    -- Inventory quantities
-    qoh Int32,  -- Quantity on Hand
-    rental Int32,
-    qor Int32,  -- Quantity on Reserved
-    qoo Int32,  -- Quantity on Order
-    reorderLevel Int32,
-    -- Audit fields
-    created_at DateTime DEFAULT now(),
-    updated_at DateTime DEFAULT now()
-) ENGINE = MergeTree()
-ORDER BY ( id)
-PARTITION BY toYYYYMM(created_at)
-  `;
+        gross_profit_percent Decimal64(2),
+        extended_cost Decimal64(2),
+        extended_price Decimal64(2),
 
-  await clickhouse.exec({ query: createQuery });
+        qoh Int32,
+         rental Int32,
+        qor Int32,
+        qoo Int32,
+        reorderLevel Int32,
+
+        created_at DateTime,
+        updated_at DateTime
+      )
+      ENGINE = MergeTree()
+      ORDER BY id
+      PARTITION BY toYYYYMM(created_at)
+    `;
+     await clickhouse.exec({ query: createQuery });
   console.log(`📦 Table ready: ${tableName}`);
 }
 
@@ -316,14 +322,11 @@ PARTITION BY toYYYYMM(created_at)
  * Main migration function
  */
 async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,batchSize = 1000) {
-  
-  try {
-    const TABLE_KEY = `product_inventory_${serviceProviderId}`;
+  try{
+   const TABLE_KEY = `product_inventory_${serviceProviderId}`;
     let lastId = await getLastMigratedId(clickhouse, TABLE_KEY);
         console.log(`▶ Resuming migration from product.id > ${lastId}`);
- // Use the same ID for query and stats
-
-    // Get total count
+         // Get total count
     const [countResult] = await mysqlConn.execute(
       'SELECT COUNT(*) as total FROM product WHERE serviceProviderId = ? and status = 1 and product.id > ? ',
       [serviceProviderId, lastId]
@@ -335,8 +338,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
     let totalMigrated = 0;
     let totalErrors = 0;
     const errors = [];
-
-    while (offset < totalRecords) {
+  while (offset < totalRecords) {
       console.log(`\nFetching batch: OFFSET=${offset}, LIMIT=${batchSize}`);
 
       // FIXED: Use query() instead of execute() for dynamic LIMIT/OFFSET
@@ -347,6 +349,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
           p.serviceProviderId,
           p.name,
           p.customId,
+          p.productSerialization,
           p.barcode,
           p.stockStatus,
           p.stockQuantity,
@@ -431,31 +434,30 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
 
       // Process each product
       const processedData = [];
-      for (const row of rows) {
-        try {
-          lastId = row.id;
+  for (const row of rows) {
+    try{
+    lastId = row.id;
           // Get serial numbers
           const serialNumbers = await getSerialNumbers(mysqlConn, row.id);
-          
-          // Get product statistics
-          const stats = await getProductStats(mysqlConn, row.id, serviceProviderId);
+    const stats = await getProductStats(mysqlConn, row.id, serviceProviderId);
+    const inventoryCreatedDate = await getInventoryCreatedDate(mysqlConn, row.id);
 
-          processedData.push({
-            id: parseInt(row.id),
+    processedData.push({
+        id: parseInt(row.id),
             franchise_id: 0,
             franchise: 'dummy',
             provider_id: parseInt(serviceProviderId),
-            provider: providerMap[serviceProviderId] || 'N/A',
-            name: row.name || 'N/A',
-            sku: row.customId || 'N/A',
-            upc: row.barcode || 'N/A',
+            provider: providerMap[serviceProviderId] || 'Others',
+            name: row.name || 'Others',
+            sku: row.customId || 'Others',
+            upc: row.barcode || 'Others',
             status: row.status || 'active',
             serial: serialNumbers,
-            productSerialization: '',
+            productSerialization: row.productSerialization || 0,
             brand_id: parseInt(row.productBrandId) || 0,
-            brand_name: brandMap[row.productBrandId] || 'N/A',
+            brand_name: brandMap[row.productBrandId] || 'Others',
             category: categoryMap[row.categoryId] || 'Uncategorized',
-            sub_category: subcategoryMap[row.subcategoryId] || 'N/A',
+            sub_category: subcategoryMap[row.subcategoryId] || 'Others',
             regularPrice: parseFloat(row.regularPrice) || 0,
             sale_price: parseFloat(row.salePrice) || 0,
             price: parseFloat(stats.salePrice) || 0,
@@ -476,13 +478,14 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
             avg_margin: parseFloat(row.avgMargin) || 0,
             margin: parseFloat(row.margin) || 0,
             department_id: row.departmentId || 0,
-            department_name: departmentMap.get(row.departmentId) || 'N/A',
+            department_name: departmentMap.get(row.departmentId) || 'Others',
             type_id: row.typeId || 0,
-            type_name: typeMap.get(row.typeId) || 'N/A',
+            type_name: typeMap.get(row.typeId) || 'Others',
             case_cost: parseFloat(row.caseCost) || 0,
             case_price: parseFloat(row.casePrice) || 0,
             online: row.online ? 'Online' : 'Retail',
-            avg_cost: parseFloat(row.avgCost) || 0,
+              productInventoryId: stats.inventoryId,                
+        inventoryCreatedDate: formatDate(inventoryCreatedDate),
             avg_sell_price: parseFloat(row.avgSellPrice) || 0,
             created_at: formatDate(row.createdDate),
             updated_at: formatDate(row.lastUpdated)

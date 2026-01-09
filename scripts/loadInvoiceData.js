@@ -240,7 +240,7 @@ async function migrateInvoices(mysqlConn, clickhouse, serviceProviderId, batchSi
         invoice_number: String(row.invoiceNumber || ''),
         invoice_date: formatDateOnly(row.invoiceDate),
         due_date: formatDateOnly(row.dueDate),
-        status: Number(row.status) || 0,
+        status: row.status==1 ? "active" : "inactive",
         member_id: row.customerMemberId || 0,
         company: companyMap[row.serviceProviderId, row.customerId]?.company || 'N/A',
         commission_clerk: resourceMap[row.resourceId]?.name || 'N/A',

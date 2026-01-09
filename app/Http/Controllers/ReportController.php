@@ -92,7 +92,39 @@ public function predefined(Request $request, $type)
                       INNER JOIN invoice_details id ON iid.invoice_id = id.id
                       {$dateFilter}
                       and iid.refund_amount > 0 
-                      ORDER BY iid.refund_amount DESC"
+                      ORDER BY iid.refund_amount DESC",
+
+        'products' => "SELECT iid.item_name, SUM(iid.quantity) AS total_qty, SUM(iid.total_price) AS total_sales 
+                       FROM invoice_items_detail iid
+                       INNER JOIN invoice_details id ON iid.invoice_id = id.id
+                       {$dateFilter}
+                       AND lowerUTF8(iid.item_type) = 'product'
+                       GROUP BY iid.item_name
+                       ORDER BY total_sales DESC",
+
+        'memberships' => "SELECT iid.item_name, SUM(iid.quantity) AS total_qty, SUM(iid.total_price) AS total_sales 
+                          FROM invoice_items_detail iid
+                          INNER JOIN invoice_details id ON iid.invoice_id = id.id
+                          {$dateFilter}
+                          AND lowerUTF8(iid.item_type) = 'membership'
+                          GROUP BY iid.item_name
+                          ORDER BY total_sales DESC",
+
+        'services' => "SELECT iid.item_name, SUM(iid.quantity) AS total_qty, SUM(iid.total_price) AS total_sales 
+                       FROM invoice_items_detail iid
+                       INNER JOIN invoice_details id ON iid.invoice_id = id.id
+                       {$dateFilter}
+                       AND lowerUTF8(iid.item_type) = 'service'
+                       GROUP BY iid.item_name
+                       ORDER BY total_sales DESC",
+
+        'classes' => "SELECT iid.item_name, SUM(iid.quantity) AS total_qty, SUM(iid.total_price) AS total_sales 
+                      FROM invoice_items_detail iid
+                      INNER JOIN invoice_details id ON iid.invoice_id = id.id
+                      {$dateFilter}
+                      AND lowerUTF8(iid.item_type) = 'class'
+                      GROUP BY iid.item_name
+                      ORDER BY total_sales DESC"
     ];
 
     $titles = [
@@ -100,8 +132,18 @@ public function predefined(Request $request, $type)
         'top-items' => 'Top Items',
         'revenue-by-franchise' => 'Revenue by Franchise',
         'payments-by-method' => 'Payments by Method',
-        'refunds' => 'Refunds'
+        'refunds' => 'Refunds',
+        'products' => 'Products',
+        'memberships' => 'Memberships',
+        'services' => 'Services',
+        'classes' => 'Classes',
+        'custom-reports' => 'Custom Reports'
     ];
+
+    // Handle custom-reports type (redirect to Ask-AI section)
+    if ($type === 'custom-reports') {
+        return redirect()->route('reports.index')->with('show_ai', true);
+    }
 
     if (!isset($queries[$type])) {
         return redirect()->route('reports.index')->with('error', 'Invalid report type');
@@ -279,7 +321,7 @@ public function run(Request $request)
 {
     $sql = $request->input('sql');
     $page = (int) $request->input('page', 1);
-    $perPage = (int) $request->input('perPage', 100); // Default = 100
+    $perPage = (int) $request->input('perPage', 500); // Default = 500
     $offset = ($page - 1) * $perPage;
     
     // Get date filters or use default (last month)

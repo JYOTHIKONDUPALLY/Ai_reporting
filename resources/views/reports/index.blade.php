@@ -32,8 +32,8 @@
   <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Flatpickr Date Range Picker -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -45,23 +45,23 @@
       --brand-primary-rgb: 167, 25, 48;
       --brand-primary-light: rgba(167, 25, 48, 0.1);
     }
-    
+
     .brand-primary {
       color: var(--brand-primary);
     }
-    
+
     .bg-brand-primary {
       background-color: var(--brand-primary);
     }
-    
+
     .bg-brand-primary-light {
       background-color: var(--brand-primary-light);
     }
-    
+
     .border-brand-primary {
       border-color: var(--brand-primary);
     }
-    
+
     .scroll-smooth::-webkit-scrollbar {
       height: 8px;
       width: 8px;
@@ -87,34 +87,34 @@
       height: 400px;
       padding: 20px;
     }
-    
+
     /* Flatpickr date range picker styling */
     .flatpickr-calendar {
       font-family: inherit;
       border-radius: 0.75rem;
       box-shadow: 0 10px 30px rgba(2, 6, 23, .15);
     }
-    
+
     .flatpickr-day.selected,
     .flatpickr-day.startRange,
     .flatpickr-day.endRange {
       background: var(--brand-primary);
       border-color: var(--brand-primary);
     }
-    
+
     .flatpickr-day.inRange {
       background: var(--brand-primary-light);
       border-color: rgba(var(--brand-primary-rgb), 0.2);
     }
-    
+
     .flatpickr-day:hover {
       background: rgba(var(--brand-primary-rgb), 0.2);
     }
-    
+
     .flatpickr-months .flatpickr-month {
       color: #1e293b;
     }
-    
+
     .flatpickr-weekdays {
       background: #f8fafc;
     }
@@ -130,31 +130,31 @@
         <div class="flex items-center gap-3">
 
           <div class="w-10 h-10 rounded-xl grid place-items-center">
-              <img alt="Logo" class="w-6 h-6" src="https://88tactical.com/wp-content/uploads/2022/07/88-tactical-logo-vert-236x300.png">
+            <img alt="Logo" class="w-6 h-6" src="https://88tactical.com/wp-content/uploads/2022/07/88-tactical-logo-vert-236x300.png">
           </div>
           <a href="/dashboards" class="font-semibold">
-              <h1>
-                  <span style="color:#000; font-weight:bold;font-size:120%;">88 Tactical</span>
-                  <span style="color:#A71930; font-weight:bold;font-size:120%;">AI</span>
-                  <span style="color:#000; font-weight:500; font-size:80%;"> Analytics</span>
-              </h1>
+            <h1>
+              <span style="color:#000; font-weight:bold;font-size:120%;">88 Tactical</span>
+              <span style="color:#A71930; font-weight:bold;font-size:120%;">AI</span>
+              <span style="color:#000; font-weight:500; font-size:80%;"> Analytics</span>
+            </h1>
           </a>
         </div>
-        
+
         <!-- Navigation Menu -->
         <nav class="flex items-center gap-6">
-          <a href="{{ route('reports.index') }}" 
-             class="px-4 py-2 text-sm font-medium rounded-lg font-semibold brand-primary bg-brand-primary-light">
+          <a href="{{ route('reports.index') }}"
+            class="px-4 py-2 text-sm font-medium rounded-lg font-semibold brand-primary bg-brand-primary-light">
             Reports
           </a>
-          <a href="{{ route('dashboards.index') }}" 
-             class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+          <a href="{{ route('dashboards.index') }}"
+            class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
             Dashboards
           </a>
           <form method="POST" action="{{ route('logout') }}" class="inline">
             @csrf
-            <button type="submit" 
-                    class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2">
+            <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2">
               <i data-lucide="log-out" class="w-4 h-4"></i>
               Logout
             </button>
@@ -163,7 +163,7 @@
       </div>
     </div>
   </header>
-  
+
   <div class="max-w-7xl mx-auto h-screen grid grid-cols-12">
     <!-- Sidebar -->
     <aside class="col-span-12 md:col-span-3 xl:col-span-3 bg-white border-r border-slate-200 p-3 md:p-4 overflow-y-auto">
@@ -178,7 +178,7 @@
 
       <nav id="report-nav" class="space-y-4 text-sm">
         <!-- Dashboards -->
-        
+
         <!-- Predefined Reports -->
         <div>
           <div class="uppercase text-xs mb-2 section-header">Payment Reports</div>
@@ -254,189 +254,189 @@
     <main class="col-span-12 md:col-span-9 xl:col-span-9 p-4 md:p-6 overflow-y-auto">
       <div class="max-w-7xl mx-auto">
 
-      <div class="text-white px-6 py-3 rounded-t-lg flex items-center justify-between flex-wrap gap-3 bg-brand-primary">
-        <div class="flex items-center gap-2">
-          <i data-lucide="database" class="w-5 h-5"></i>
-          <span id="active-report-title" class="font-semibold">Select a report</span>
-        </div>
-        <div class="ml-auto flex items-center gap-2 flex-wrap">
-          <label class="text-sm font-medium flex items-center gap-2">
-            <i data-lucide="calendar" class="w-4 h-4"></i>
-            <span>Date Range:</span>
-          </label>
-          <input id="dateRangePicker" type="text" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm text-gray-900 cursor-pointer" placeholder="Select date range" readonly style="min-width: 250px;" />
-          <button id="applyDateFilter" class="px-4 py-2 rounded-xl bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
-            <i data-lucide="filter" class="w-4 h-4"></i>
-            Apply
-          </button>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl ring-1 ring-slate-200 shadow-soft hidden">
-        <div class="p-3 border-b border-slate-100 flex items-center gap-2">
-          <i data-lucide="database" class="w-4 h-4 text-slate-500"></i>
-          <div class="text-sm font-medium">Generated SQL (ClickHouse)</div>
-          <div class="ml-auto flex items-center gap-2">
-            <button id="toggleSql" title="Toggle SQL View" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="eye" class="w-4 h-4"></i></button>
-            <button id="copySql" title="Copy SQL" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="copy" class="w-4 h-4"></i></button>
-            <button id="runSql" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs">Run</button>
+        <div class="text-white px-6 py-3 rounded-t-lg flex items-center justify-between flex-wrap gap-3 bg-brand-primary">
+          <div class="flex items-center gap-2">
+            <i data-lucide="database" class="w-5 h-5"></i>
+            <span id="active-report-title" class="font-semibold">Select a report</span>
+          </div>
+          <div class="ml-auto flex items-center gap-2 flex-wrap">
+            <label class="text-sm font-medium flex items-center gap-2">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+              <span>Date Range:</span>
+            </label>
+            <input id="dateRangePicker" type="text" class="rounded-xl ring-1 ring-slate-200 bg-white px-3 py-2 text-sm text-gray-900 cursor-pointer" placeholder="Select date range" readonly style="min-width: 250px;" />
+            <button id="applyDateFilter" class="px-4 py-2 rounded-xl bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
+              <i data-lucide="filter" class="w-4 h-4"></i>
+              Apply
+            </button>
           </div>
         </div>
-        <div id="sqlContainer" class="hidden">
-          <pre id="sqlBox" class="p-4 overflow-auto text-sm bg-slate-50 rounded-b-2xl code"><span class="text-slate-400">-- SQL for the selected report will appear here</span></pre>
-        </div>
-      </div>
-
-
-      <!-- Tabs -->
-      <div class="bg-white">
-        <div class="flex gap-2 border-b border-gray-200 px-6 pt-4">
-          <button class="tab-btn active px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-brand-primary brand-primary" data-tab="table">
-            <i data-lucide="table" class="w-4 h-4"></i>
-            Table View
-          </button>
-          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="chart">
-            <i data-lucide="pie-chart" class="w-4 h-4"></i>
-            Chart View
-          </button>
-          <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="export">
-            <i data-lucide="download" class="w-4 h-4 inline-block mr-2"></i>Export Data
-          </button>
+        <div class="bg-white rounded-2xl ring-1 ring-slate-200 shadow-soft hidden">
+          <div class="p-3 border-b border-slate-100 flex items-center gap-2">
+            <i data-lucide="database" class="w-4 h-4 text-slate-500"></i>
+            <div class="text-sm font-medium">Generated SQL (ClickHouse)</div>
+            <div class="ml-auto flex items-center gap-2">
+              <button id="toggleSql" title="Toggle SQL View" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="eye" class="w-4 h-4"></i></button>
+              <button id="copySql" title="Copy SQL" class="p-2 rounded-lg hover:bg-slate-50"><i data-lucide="copy" class="w-4 h-4"></i></button>
+              <button id="runSql" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs">Run</button>
+            </div>
+          </div>
+          <div id="sqlContainer" class="hidden">
+            <pre id="sqlBox" class="p-4 overflow-auto text-sm bg-slate-50 rounded-b-2xl code"><span class="text-slate-400">-- SQL for the selected report will appear here</span></pre>
+          </div>
         </div>
 
-        <!-- Tab Contents -->
-        <div class="px-6 pb-6">
-          <!-- Table View -->
-          <div id="tab-table" class="tab-content pt-4">
-            <!-- Error Display -->
-            @if(isset($error) && !empty($error))
-            <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-              <div class="flex items-start">
-                <div class="flex-shrink-0">
-                  <i data-lucide="alert-circle" class="w-5 h-5 text-red-500"></i>
-                </div>
-                <div class="ml-3 flex-1">
-                  <h3 class="text-sm font-medium text-red-800">Error</h3>
-                  <div class="mt-2 text-sm text-red-700">
-                    <p>{{ $error }}</p>
+
+        <!-- Tabs -->
+        <div class="bg-white">
+          <div class="flex gap-2 border-b border-gray-200 px-6 pt-4">
+            <button class="tab-btn active px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-brand-primary brand-primary" data-tab="table">
+              <i data-lucide="table" class="w-4 h-4"></i>
+              Table View
+            </button>
+            <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="chart">
+              <i data-lucide="pie-chart" class="w-4 h-4"></i>
+              Chart View
+            </button>
+            <button class="tab-btn px-5 py-3 text-sm font-medium flex items-center gap-2 border-b-2 border-transparent text-gray-600 hover:text-gray-900" data-tab="export">
+              <i data-lucide="download" class="w-4 h-4 inline-block mr-2"></i>Export Data
+            </button>
+          </div>
+
+          <!-- Tab Contents -->
+          <div class="px-6 pb-6">
+            <!-- Table View -->
+            <div id="tab-table" class="tab-content pt-4">
+              <!-- Error Display -->
+              @if(isset($error) && !empty($error))
+              <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                <div class="flex items-start">
+                  <div class="flex-shrink-0">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-red-500"></i>
+                  </div>
+                  <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-medium text-red-800">Error</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                      <p>{{ $error }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            @endif
-            
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <div class="overflow-x-auto">
-                <table id="dataTable" class="min-w-full text-sm">
-                  <thead id="tableHead"></thead>
-                  <tbody id="tableBody">
-                    @if(isset($error) && !empty($error))
-                    <tr>
-                      <td colspan="100" class="text-center text-red-600 py-8 font-medium">
-                        {{ $error }}
-                      </td>
-                    </tr>
-                    @else
-                    <tr>
-                      <td colspan="100" class="text-center text-slate-500 py-8">
-                        Select a report from the sidebar to view data
-                      </td>
-                    </tr>
-                    @endif
-                  </tbody>
-                </table>
-                <div id="paginationControls" class="mb-3"></div>
-              </div>
-            </div>
-            
-            <!-- Debug SQL Display -->
-            @if(isset($sql) && !empty($sql))
-            <div class="mt-4 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-              <details class="group">
-                <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-2">
-                  <i data-lucide="code" class="w-3 h-3"></i>
-                  <span>View SQL (Debug)</span>
-                  <i data-lucide="chevron-down" class="w-3 h-3 group-open:rotate-180 transition-transform"></i>
-                </summary>
-                <div class="mt-2 p-3 bg-gray-50 rounded border border-gray-200">
-                  <pre class="text-xs text-gray-700 whitespace-pre-wrap break-words font-mono overflow-x-auto">{{ $sql }}</pre>
-                </div>
-              </details>
-            </div>
-            @endif
-            
-          </div>
+              @endif
 
-          <!-- Chart View -->
-          <div id="tab-chart" class="tab-content hidden pt-4">
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <div class="p-4 border-b border-slate-200 flex items-center justify-between">
-                <div class="text-sm font-medium text-slate-700">Chart Visualization</div>
-                <div class="flex gap-2">
-                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="pie">
-                    <i data-lucide="pie-chart" class="w-4 h-4 inline-block mr-1"></i>
-                    Pie
-                  </button>
-                  <button class="chart-type-btn active px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200" data-chart-type="line">
-                    <i data-lucide="trending-up" class="w-4 h-4 inline-block mr-1"></i>
-                    Line
-                  </button>
-                  <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="bar">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline-block mr-1"></i>
-                    Bar
-                  </button>
+              <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table id="dataTable" class="min-w-full text-sm">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody">
+                      @if(isset($error) && !empty($error))
+                      <tr>
+                        <td colspan="100" class="text-center text-red-600 py-8 font-medium">
+                          {{ $error }}
+                        </td>
+                      </tr>
+                      @else
+                      <tr>
+                        <td colspan="100" class="text-center text-slate-500 py-8">
+                          Select a report from the sidebar to view data
+                        </td>
+                      </tr>
+                      @endif
+                    </tbody>
+                  </table>
+                  <div id="paginationControls" class="mb-3"></div>
                 </div>
               </div>
-              <div class="chart-container">
-                <canvas id="dataChart"></canvas>
+
+              <!-- Debug SQL Display -->
+              @if(isset($sql) && !empty($sql))
+              <div class="mt-4 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+                <details class="group">
+                  <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                    <i data-lucide="code" class="w-3 h-3"></i>
+                    <span>View SQL (Debug)</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 group-open:rotate-180 transition-transform"></i>
+                  </summary>
+                  <div class="mt-2 p-3 bg-gray-50 rounded border border-gray-200">
+                    <pre class="text-xs text-gray-700 whitespace-pre-wrap break-words font-mono overflow-x-auto">{{ $sql }}</pre>
+                  </div>
+                </details>
+              </div>
+              @endif
+
+            </div>
+
+            <!-- Chart View -->
+            <div id="tab-chart" class="tab-content hidden pt-4">
+              <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                  <div class="text-sm font-medium text-slate-700">Chart Visualization</div>
+                  <div class="flex gap-2">
+                    <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="pie">
+                      <i data-lucide="pie-chart" class="w-4 h-4 inline-block mr-1"></i>
+                      Pie
+                    </button>
+                    <button class="chart-type-btn active px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200" data-chart-type="line">
+                      <i data-lucide="trending-up" class="w-4 h-4 inline-block mr-1"></i>
+                      Line
+                    </button>
+                    <button class="chart-type-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200" data-chart-type="bar">
+                      <i data-lucide="bar-chart-3" class="w-4 h-4 inline-block mr-1"></i>
+                      Bar
+                    </button>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <canvas id="dataChart"></canvas>
+                </div>
               </div>
             </div>
+            <!-- Export section -->
+            <div id="tab-export" class="tab-content hidden pt-4">
+              <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-gray-700 text-center">
+
+                <!-- Download Icon and Label -->
+                <div class="flex flex-col items-center justify-center">
+                  <i data-lucide="download" class="w-24 h-24 text-sky-500 mb-4"></i>
+                  <button id="exportCSV" class="text-sky-600 text-base font-medium hover:underline">
+                    Download CSV
+                  </button>
+                </div>
+
+                <p class="mt-6 text-xs text-slate-400">
+                  The export will include the currently displayed table data.
+                </p>
+              </div>
+            </div>
+
           </div>
-          <!-- Export section -->
-         <div id="tab-export" class="tab-content hidden pt-4">
-  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-gray-700 text-center">
-    
-    <!-- Download Icon and Label -->
-    <div class="flex flex-col items-center justify-center">
-      <i data-lucide="download" class="w-24 h-24 text-sky-500 mb-4"></i>
-      <button id="exportCSV" class="text-sky-600 text-base font-medium hover:underline">
-        Download CSV
-      </button>
-    </div>
-
-    <p class="mt-6 text-xs text-slate-400">
-      The export will include the currently displayed table data.
-    </p>
-  </div>
-</div>
-
         </div>
-      </div>
 
-      <!-- AI Chat Section -->
-      <div class="mt-6 bg-white rounded-lg shadow p-6">
-  <div class="flex items-center gap-2 mb-4">
-    <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i>
-    <h3 class="text-base text-gray-700">Ask for a report in plain english</h3>
-  </div>
+        <!-- AI Chat Section -->
+        <div class="mt-6 bg-white rounded-lg shadow p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i>
+            <h3 class="text-base text-gray-700">Ask for a report in plain english</h3>
+          </div>
 
-  <form method="POST" action="{{ route('reports.askAi') }}" id="chatForm">
-    @csrf
-    <div class="flex gap-3 mb-4">
-      <input id="chatInput" name="question" type="text" placeholder="e.g., top 20 non-members by spend last quarter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">GET REPORT</button>
-    </div>
-    <input type="hidden" name="start_date" id="chatStartDate" value="{{ isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')) }}">
-    <input type="hidden" name="end_date" id="chatEndDate" value="{{ isset($endDate) ? $endDate : date('Y-m-d') }}">
-  </form>
+          <form method="POST" action="{{ route('reports.askAi') }}" id="chatForm">
+            @csrf
+            <div class="flex gap-3 mb-4">
+              <input id="chatInput" name="question" type="text" placeholder="e.g., top 20 non-members by spend last quarter" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">GET REPORT</button>
+            </div>
+            <input type="hidden" name="start_date" id="chatStartDate" value="{{ isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')) }}">
+            <input type="hidden" name="end_date" id="chatEndDate" value="{{ isset($endDate) ? $endDate : date('Y-m-d') }}">
+          </form>
 
-  <div class="text-sm text-gray-600 mb-3">Frequently asked reports:</div>
-  <div class="flex flex-wrap gap-2">
-    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Top 10 spending customers this month</button>
-    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Show me monthly sales trends for 2025</button>
-    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">High turnover products</button>
-    <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Give me basic report for invoice list for this month</button>
-  </div>
-</div>
+          <div class="text-sm text-gray-600 mb-3">Frequently asked reports:</div>
+          <div class="flex flex-wrap gap-2">
+            <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Top 10 spending customers this month</button>
+            <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Show me monthly sales trends for 2025</button>
+            <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">High turnover products</button>
+            <button class="chip px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200">Give me basic report for invoice list for this month</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -484,83 +484,84 @@
   <script>
     // Global variable for date range picker (accessible to all functions)
     let dateRangePicker;
-    
+
     document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Flatpickr date range picker
-    const defaultStartDate = @json(isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')));
-    const defaultEndDate = @json(isset($endDate) ? $endDate : date('Y-m-d'));
-    
-    dateRangePicker = flatpickr("#dateRangePicker", {
-      mode: "range",
-      dateFormat: "Y-m-d",
-      defaultDate: [defaultStartDate, defaultEndDate],
-      maxDate: "today",
-      onChange: function(selectedDates, dateStr, instance) {
-        // Update hidden inputs in Ask AI form when dates change
-        if (selectedDates.length === 2) {
-          const chatStartDate = document.getElementById('chatStartDate');
-          const chatEndDate = document.getElementById('chatEndDate');
-          if (chatStartDate) chatStartDate.value = selectedDates[0].toISOString().split('T')[0];
-          if (chatEndDate) chatEndDate.value = selectedDates[1].toISOString().split('T')[0];
+      // Initialize Flatpickr date range picker
+      const defaultStartDate = @json(isset($startDate) ? $startDate : date('Y-m-d', strtotime('-1 month')));
+      const defaultEndDate = @json(isset($endDate) ? $endDate : date('Y-m-d'));
+      const chatStartDate = document.getElementById('chatStartDate');
+      const chatEndDate = document.getElementById('chatEndDate');
+
+      dateRangePicker = flatpickr("#dateRangePicker", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        defaultDate: [defaultStartDate, defaultEndDate],
+        maxDate: "today",
+        onChange: function(selectedDates, dateStr, instance) {
+          // Update hidden inputs in Ask AI form when dates change
+          if (selectedDates.length === 2) {
+  chatStartDate.value = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
+  chatEndDate.value = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
+}
+
         }
+      });
+
+      // Check if this is a predefined report loaded from server
+      @if(isset($predefinedTitle))
+      const predefinedTitle = @json($predefinedTitle);
+      document.getElementById('active-report-title').textContent = predefinedTitle;
+      localStorage.setItem('activeReportTitle', predefinedTitle);
+      @elseif(isset($aiQuestionTitle))
+      // Check if this is an AI question response
+      const aiQuestionTitle = @json($aiQuestionTitle);
+      document.getElementById('active-report-title').textContent = aiQuestionTitle;
+      localStorage.setItem('activeReportTitle', aiQuestionTitle);
+      @else
+      const savedTitle = localStorage.getItem('activeReportTitle');
+      if (savedTitle) {
+        document.getElementById('active-report-title').textContent = savedTitle;
+      }
+      @endif
+
+      // Check for errors first - don't override if error exists
+      @if(isset($error) && !empty($error))
+      const serverError = @json($error);
+      // Error is already displayed in the table body via Blade template
+      // Just ensure table head is cleared
+      document.getElementById('tableHead').innerHTML = '';
+      @else
+      // If there are results from predefined report or AI question, render them
+      @if(isset($results) && !empty($results))
+      const serverResults = @json($results);
+      if (serverResults && serverResults.length > 0) {
+        renderTable(serverResults);
+        @if(isset($sql))
+        // Store SQL for export
+        currentSql = @json($sql);
+        @endif
+      } else {
+        // No data available
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
+        document.getElementById('tableHead').innerHTML = '';
+      }
+      @endif
+      @endif
+
+      // Initialize icons after page loads (for SQL debug section)
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      // Bind export button
+      const exportBtn = document.getElementById("exportCSV");
+      if (exportBtn) {
+        exportBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          exportTableToCSV("report_" + new Date().toISOString().split('T')[0] + ".csv");
+        });
       }
     });
-    
-    // Check if this is a predefined report loaded from server
-    @if(isset($predefinedTitle))
-        const predefinedTitle = @json($predefinedTitle);
-        document.getElementById('active-report-title').textContent = predefinedTitle;
-        localStorage.setItem('activeReportTitle', predefinedTitle);
-    @elseif(isset($aiQuestionTitle))
-        // Check if this is an AI question response
-        const aiQuestionTitle = @json($aiQuestionTitle);
-        document.getElementById('active-report-title').textContent = aiQuestionTitle;
-        localStorage.setItem('activeReportTitle', aiQuestionTitle);
-    @else
-        const savedTitle = localStorage.getItem('activeReportTitle');
-        if (savedTitle) {
-            document.getElementById('active-report-title').textContent = savedTitle;
-        }
-    @endif
-    
-    // Check for errors first - don't override if error exists
-    @if(isset($error) && !empty($error))
-        const serverError = @json($error);
-        // Error is already displayed in the table body via Blade template
-        // Just ensure table head is cleared
-        document.getElementById('tableHead').innerHTML = '';
-    @else
-        // If there are results from predefined report or AI question, render them
-        @if(isset($results) && !empty($results))
-            const serverResults = @json($results);
-            if (serverResults && serverResults.length > 0) {
-                renderTable(serverResults);
-                @if(isset($sql))
-                    // Store SQL for export
-                    currentSql = @json($sql);
-                @endif
-            } else {
-                // No data available
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
-                document.getElementById('tableHead').innerHTML = '';
-            }
-        @endif
-    @endif
-    
-    // Initialize icons after page loads (for SQL debug section)
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Bind export button
-    const exportBtn = document.getElementById("exportCSV");
-    if (exportBtn) {
-        exportBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            exportTableToCSV("report_" + new Date().toISOString().split('T')[0] + ".csv");
-        });
-    }
-});
     const TITLES = {
       top_spenders: 'Top spending customers',
       all_customers: 'All customers (within date range)',
@@ -608,11 +609,11 @@
       }) => {
         let dateFilter = '';
         if (start && end) {
-          dateFilter = `Where id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+          dateFilter = `and id.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
         } else {
           const defaultEnd = new Date().toISOString().split('T')[0];
           const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          dateFilter = `where id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+          dateFilter = `and id.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
         }
 
         return `/* Top ${N} ${audience?.replace('_', '-')} customers by spend */ 
@@ -985,11 +986,14 @@ LIMIT 100;`
 SELECT oi.item_name, oi.category, SUM(oi.quantity) AS units, SUM(oi.total_price) AS revenue
 FROM invoice_items_detail oi 
 INNER JOIN invoice_details o ON o.id = oi.invoice_id
-WHERE oi.item_type = 'product' 
-  AND oi.invoice_id NOT IN (SELECT DISTINCT invoiceId FROM Range_appointments)
+WHERE oi.item_type Like '%product%'
+AND oi.invoice_id NOT IN (
+  SELECT invoiceId
+  FROM Range_appointments
+  WHERE invoiceId IS NOT NULL
+)
   ${dateFilter}
   ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
-  AND oi.SKU NOT IN ('')
   AND oi.category NOT IN ('Range Services', 'Memberships')
 GROUP BY oi.item_name, oi.category
 ORDER BY units DESC
@@ -1010,8 +1014,7 @@ SELECT oi.item_name, oi.category, count() AS lines, sum(oi.quantity) AS units
 FROM invoice_items_detail oi INNER JOIN invoice_details o ON o.id=oi.invoice_id
 WHERE oi.item_type='product' ${dateFilter}
 GROUP BY oi.item_name, oi.category
-ORDER BY lines DESC
-LIMIT ${N};`
+ORDER BY units DESC`
       },
       prd_least: ({
         start,
@@ -1038,17 +1041,33 @@ LIMIT ${N};`
       prd_slow_movers: ({
         N
       }) => `/* Slow movers (inventory-based) */
-SELECT 
-    pi.name AS product_name,
-    pi.qoh AS quantity_on_hand,
-    ifNull(dateDiff('day', max(o.invoice_date), today()), -1) AS days_since_last_sale
-FROM product_inventory AS pi
-LEFT JOIN invoice_items_detail AS iid
+    SELECT
+pi.name AS product_name,
+    pi.sku,
+    pi.qoh,
+    pi.qor,
+    dateDiff('day', pi.inventoryCreatedDate, today()) AS inventory_age_days,
+    SUM(iid.quantity) AS total_sold_qty,
+    MAX(o.invoice_date) AS last_sale_date,
+    ifNull(
+        dateDiff('day', MAX(o.invoice_date), today()),
+        9999
+    ) AS days_since_last_sale
+FROM product_inventory pi
+LEFT JOIN invoice_items_detail iid
     ON iid.SKU = pi.sku
-LEFT JOIN invoice_details AS o
+LEFT JOIN invoice_details o
     ON o.id = iid.invoice_id
-GROUP BY pi.sku, pi.qoh, pi.name
-ORDER BY days_since_last_sale DESC
+WHERE (pi.qoh + pi.qor) > 0
+AND 
+        inventory_age_days > 60
+GROUP BY
+    pi.name,
+    pi.sku,
+    pi.qoh,
+    pi.qor,
+    pi.inventoryCreatedDate
+    order by inventory_age_days  desc
 LIMIT ${N};
 
 `,
@@ -1339,113 +1358,113 @@ ORDER BY transaction_count DESC`
 
     lucide.createIcons();
 
-// Get data from server (passed from Laravel Blade)
-const serverData = @json($results ?? []);
-const serverReportKey = @json($reportKey ?? null);
-const serverSql = @json($sql ?? null);
-let currentData = serverData || [];
-let currentChart = null;
-let currentChartType = 'line';
-let currentReportKey = serverReportKey || null;
-let selectedQuery = '';
+    // Get data from server (passed from Laravel Blade)
+    const serverData = @json($results ?? []);
+    const serverReportKey = @json($reportKey ?? null);
+    const serverSql = @json($sql ?? null);
+    let currentData = serverData || [];
+    let currentChart = null;
+    let currentChartType = 'line';
+    let currentReportKey = serverReportKey || null;
+    let selectedQuery = '';
 
-// Pagination variables
-let currentPage = 1;
-let rowsPerPage = 10;
-let allTableData = [];
+    // Pagination variables
+    let currentPage = 1;
+    let rowsPerPage = 10;
+    let allTableData = [];
 
-// Format number helper
-function formatNumber(value, decimals = 0) {
-  if (typeof value !== 'number') return value;
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
-}
-
-// Format date helper - converts dates to "20 Nov 2025" format
-function formatDate(value) {
-  if (!value) return value;
-  
-  // Check if the value looks like a date
-  const dateStr = String(value).trim();
-  
-  // Try to parse as date
-  let date;
-  try {
-    // Handle various date formats
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-      // YYYY-MM-DD format
-      date = new Date(dateStr);
-    } else if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)) {
-      // YYYY-MM-DD HH:MM:SS format
-      date = new Date(dateStr);
-    } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}/)) {
-      // MM/DD/YYYY format
-      const parts = dateStr.split('/');
-      date = new Date(parts[2], parts[0] - 1, parts[1]);
-    } else {
-      // Try generic date parsing
-      date = new Date(dateStr);
+    // Format number helper
+    function formatNumber(value, decimals = 0) {
+      if (typeof value !== 'number') return value;
+      return value.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
     }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return value; // Return original if not a valid date
+
+    // Format date helper - converts dates to "20 Nov 2025" format
+    function formatDate(value) {
+      if (!value) return value;
+
+      // Check if the value looks like a date
+      const dateStr = String(value).trim();
+
+      // Try to parse as date
+      let date;
+      try {
+        // Handle various date formats
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+          // YYYY-MM-DD format
+          date = new Date(dateStr);
+        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)) {
+          // YYYY-MM-DD HH:MM:SS format
+          date = new Date(dateStr);
+        } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+          // MM/DD/YYYY format
+          const parts = dateStr.split('/');
+          date = new Date(parts[2], parts[0] - 1, parts[1]);
+        } else {
+          // Try generic date parsing
+          date = new Date(dateStr);
+        }
+
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          return value; // Return original if not a valid date
+        }
+
+        // Format as "20 Nov 2025"
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = date.getDate();
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+
+        return `${day} ${month} ${year}`;
+      } catch (e) {
+        return value; // Return original if parsing fails
+      }
     }
-    
-    // Format as "20 Nov 2025"
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    
-    return `${day} ${month} ${year}`;
-  } catch (e) {
-    return value; // Return original if parsing fails
-  }
-}
 
-// Check if a column name suggests it's a date column
-// Remove prefixes from item names
-function removeItemPrefix(label) {
-  if (!label) return label;
-  const str = String(label).trim();
-  const prefixes = ['Product:', 'class:', 'Membership:', 'Service:', 'Appointment:'];
-  for (const prefix of prefixes) {
-    if (str.toLowerCase().startsWith(prefix.toLowerCase())) {
-      return str.substring(prefix.length).trim();
+    // Check if a column name suggests it's a date column
+    // Remove prefixes from item names
+    function removeItemPrefix(label) {
+      if (!label) return label;
+      const str = String(label).trim();
+      const prefixes = ['Product:', 'class:', 'Membership:', 'Service:', 'Appointment:'];
+      for (const prefix of prefixes) {
+        if (str.toLowerCase().startsWith(prefix.toLowerCase())) {
+          return str.substring(prefix.length).trim();
+        }
+      }
+      return str;
     }
-  }
-  return str;
-}
 
-function isDateColumn(columnName) {
-  const dateKeywords = ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'created', 'updated', 'invoice_date', 'first_date', 'week_start', 'week_end'];
-  return dateKeywords.some(keyword => columnName.toLowerCase().includes(keyword.toLowerCase()));
-}
+    function isDateColumn(columnName) {
+      const dateKeywords = ['date', 'Date', 'DATE', 'time', 'Time', 'TIME', 'created', 'updated', 'invoice_date', 'first_date', 'week_start', 'week_end'];
+      return dateKeywords.some(keyword => columnName.toLowerCase().includes(keyword.toLowerCase()));
+    }
 
-// Check if a column name suggests it's an ID column
-function isIdColumn(columnName) {
-  if (!columnName) return false;
-  const lowerName = columnName.toLowerCase().trim();
-  // Check if column name ends with _id or is exactly 'id'
-  return lowerName === 'id' || lowerName.endsWith('_id');
-}
+    // Check if a column name suggests it's an ID column
+    function isIdColumn(columnName) {
+      if (!columnName) return false;
+      const lowerName = columnName.toLowerCase().trim();
+      // Check if column name ends with _id or is exactly 'id'
+      return lowerName === 'id' || lowerName.endsWith('_id');
+    }
 
-// Render pagination controls
-function renderPagination(totalRows) {
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const paginationContainer = document.getElementById('paginationControls');
-  
-  if (!paginationContainer) return;
+    // Render pagination controls
+    function renderPagination(totalRows) {
+      const totalPages = Math.ceil(totalRows / rowsPerPage);
+      const paginationContainer = document.getElementById('paginationControls');
 
-  // Calculate display range
-  const startRow = (currentPage - 1) * rowsPerPage + 1;
-  const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+      if (!paginationContainer) return;
 
-  // Main container
-  let paginationHTML = `
+      // Calculate display range
+      const startRow = (currentPage - 1) * rowsPerPage + 1;
+      const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+
+      // Main container
+      let paginationHTML = `
     <div class=" p-3 mt-4 flex justify-between items-center text-sm text-gray-700 border-t pt-3">
       
       <!-- Previous Button -->
@@ -1481,521 +1500,527 @@ function renderPagination(totalRows) {
     </div>
   `;
 
-  paginationContainer.innerHTML = paginationHTML;
+      paginationContainer.innerHTML = paginationHTML;
 
-  // Handle rows-per-page changes
-  document.getElementById('perPageSelect').addEventListener('change', e => {
-    const newPerPage = parseInt(e.target.value);
-    rowsPerPage = newPerPage;
-    currentPage = 1; // Reset to first page
-    renderTable(allTableData);
-  });
-}
-
-// Global function for changing pages
-window.changePage = function (page) {
-  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
-  if (page < 1 || page > totalPages) return;
-  currentPage = page;
-  renderTable(allTableData);
-};
-
-
-// Change page function (global scope for onclick)
-window.changePage = function(page) {
-  const totalPages = Math.ceil(allTableData.length / rowsPerPage);
-  if (page < 1 || page > totalPages) return;
-  
-  currentPage = page;
-  renderTable(allTableData);
-}
-
-// Render table with pagination and alternating row colors
-function renderTable(data) {
-  if (!data || data.length === 0) {
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
-    document.getElementById('tableHead').innerHTML = '';
-    if (document.getElementById('rowsCount')) {
-      document.getElementById('rowsCount').textContent = '';
+      // Handle rows-per-page changes
+      document.getElementById('perPageSelect').addEventListener('change', e => {
+        const newPerPage = parseInt(e.target.value);
+        rowsPerPage = newPerPage;
+        currentPage = 1; // Reset to first page
+        renderTable(allTableData);
+      });
     }
-    const paginationContainer = document.getElementById('paginationControls');
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
 
-  // Store all data for pagination
-  allTableData = data;
-  
-  const headers = Object.keys(data[0]);
+    // Global function for changing pages
+    window.changePage = function(page) {
+      const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+      if (page < 1 || page > totalPages) return;
+      currentPage = page;
+      renderTable(allTableData);
+    };
 
-  // Render table header
-  const headerHTML = headers.map(col =>
-    `<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300 bg-gray-700 text-white">${col.replace(/_/g, ' ')}</th>`
-  ).join('');
-  document.getElementById('tableHead').innerHTML = `<tr>${headerHTML}</tr>`;
 
-  // Calculate pagination
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, data.length);
-  const paginatedData = data.slice(startIndex, endIndex);
+    // Change page function (global scope for onclick)
+    window.changePage = function(page) {
+      const totalPages = Math.ceil(allTableData.length / rowsPerPage);
+      if (page < 1 || page > totalPages) return;
 
-  // Render table body with alternating row colors
-  const rowsHTML = paginatedData.map((row, index) => {
-    const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-    const cells = headers.map(key => {
-      let val = row[key];
-      
-      // Format dates
-      if (isDateColumn(key) || (val && typeof val === 'string' && (val.match(/^\d{4}-\d{2}-\d{2}/) || val.match(/^\d{2}\/\d{2}\/\d{4}/)))) {
-        val = formatDate(val);
-      } else if (typeof val === 'number') {
-        // Don't format ID columns with commas - show as plain number
-        if (isIdColumn(key)) {
-          val = val.toString(); // Convert to string without formatting
-        } else {
-          val = formatNumber(val, val % 1 ? 2 : 0);
+      currentPage = page;
+      renderTable(allTableData);
+    }
+
+    // Render table with pagination and alternating row colors
+    function renderTable(data) {
+      if (!data || data.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="100" class="text-center text-slate-500 py-8">No data available</td></tr>';
+        document.getElementById('tableHead').innerHTML = '';
+        if (document.getElementById('rowsCount')) {
+          document.getElementById('rowsCount').textContent = '';
         }
-      } else if (typeof val === 'string') {
-        // Remove prefixes from item names
-        val = removeItemPrefix(val);
+        const paginationContainer = document.getElementById('paginationControls');
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
       }
-      
-      return `<td class="px-4 py-3 text-sm border border-gray-300 text-gray-700">${val ?? ''}</td>`;
-    }).join('');
-    return `<tr class="hover:bg-gray-100 ${rowClass}">${cells}</tr>`;
-  }).join('');
 
-  document.getElementById('tableBody').innerHTML = rowsHTML;
-  
-  if (document.getElementById('rowsCount'))
-    document.getElementById('rowsCount').textContent = `${data.length} rows`;
-  
-  // Render pagination
-  renderPagination(data.length);
-}
+      // Store all data for pagination
+      allTableData = data;
 
-// Render chart - IMPROVED to handle AI queries
-function renderChart(data, reportKey, chartType = 'line') {
-  if (!data || data.length === 0) {
-    showChartMessage('No data available to create chart.');
-    return;
-  }
+      const headers = Object.keys(data[0]);
 
-  const canvas = document.getElementById('dataChart');
-  if (!canvas) {
-    console.warn('Chart canvas not found.');
-    return;
-  }
+      // Render table header
+      const headerHTML = headers.map(col =>
+        `<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300 bg-gray-700 text-white">${col.replace(/_/g, ' ')}</th>`
+      ).join('');
+      document.getElementById('tableHead').innerHTML = `<tr>${headerHTML}</tr>`;
 
-  const ctx = canvas.getContext('2d');
+      // Calculate pagination
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+      const paginatedData = data.slice(startIndex, endIndex);
 
-  if (currentChart) {
-    currentChart.destroy();
-  }
+      // Render table body with alternating row colors
+      const rowsHTML = paginatedData.map((row, index) => {
+        const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+        const cells = headers.map(key => {
+          let val = row[key];
 
-  let labels = [];
-  let values = [];
-  let chartTitle = '';
-  let valueLabel = '';
-
-  // --- GENERIC CHART LOGIC for AI queries ---
-  const keys = Object.keys(data[0]);
-  
-  // Find the first string/text column for labels
-  const labelKey = keys.find(key => typeof data[0][key] === 'string');
-  
-  // Find the first numeric column for values
-  const valueKey = keys.find(key => typeof data[0][key] === 'number');
-  
-  if (!labelKey || !valueKey) {
-    showChartMessage('Could not find appropriate columns for chart (need at least one text and one numeric column).');
-    return;
-  }
-
-  labels = data.map(row => removeItemPrefix(row[labelKey]));
-  values = data.map(row => {
-    const val = row[valueKey];
-    return typeof val === 'number' ? val : 0;
-  });
-  valueLabel = valueKey.replace(/_/g, ' ');
-
-  // --- If all values are zero or invalid, also skip ---
-  if (values.every(v => v === 0)) {
-    showChartMessage('Chart cannot be created because all values are zero or invalid.');
-    return;
-  }
-
-  // --- Chart colors and config ---
-  const colors = ['#A71930', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#059669', '#0891b2'];
-
-  const chartConfig = {
-    type: chartType,
-    data: {
-      labels,
-      datasets: [{
-        label: valueLabel,
-        data: values,
-        backgroundColor: chartType === 'line' ? 'rgba(167, 25, 48, 0.1)' : colors,
-        borderColor: chartType === 'line' ? '#A71930' : '#ffffff',
-        borderWidth: 2,
-        fill: chartType === 'line',
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: chartType === 'pie',
-          position: 'right'
-        },
-        title: {
-          display: true,
-          text: chartTitle,
-          font: { size: 16, weight: 'bold' },
-          padding: 20
-        }
-      },
-      scales: chartType !== 'pie' ? {
-        y: { beginAtZero: true }
-      } : undefined
-    }
-  };
-
-  currentChart = new Chart(ctx, chartConfig);
-  currentChartType = chartType;
-}
-
-// Helper function to show fallback message
-function showChartMessage(message) {
-  const container = document.getElementById('chartContainer') || document.body;
-  const msgElement = document.createElement('div');
-  msgElement.textContent = message;
-  msgElement.style.textAlign = 'center';
-  msgElement.style.color = '#6b7280';
-  msgElement.style.padding = '2rem';
-  msgElement.style.fontStyle = 'italic';
-  msgElement.style.fontSize = '1rem';
-
-  const canvas = document.getElementById('dataChart');
-  if (canvas && canvas.parentNode) {
-    canvas.parentNode.replaceChild(msgElement, canvas);
-  } else {
-    container.appendChild(msgElement);
-  }
-}
-
-
-// Load report - submit SQL to backend
-function loadReport(reportKey) {
-  currentReportKey = reportKey;
-  
-  // Store report key in sessionStorage to persist across page reload
-  sessionStorage.setItem('currentReportKey', reportKey);
-
-  const reportTitle = TITLES[reportKey] || 'Report';
-  document.getElementById('active-report-title').textContent = reportTitle;
-  localStorage.setItem('activeReportTitle', reportTitle);
-
-  // Get dates from date range picker
-  let start, end;
-  if (dateRangePicker && dateRangePicker.selectedDates && dateRangePicker.selectedDates.length === 2) {
-    const selectedDates = dateRangePicker.selectedDates;
-    start = selectedDates[0].toISOString().split('T')[0];
-    end = selectedDates[1].toISOString().split('T')[0];
-  } else {
-    // Fallback to default (last month)
-    const defaultEnd = new Date().toISOString().split('T')[0];
-    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    start = defaultStart;
-    end = defaultEnd;
-  }
-
-  // Generate SQL for this report
-  const audience = 'all';
-  const N = 100;
-  const fn = SQLS[reportKey];
-
-const AvoidAlert = ['refunds', 'payments-by-method', 'revenue-by-franchise', 'top-items', 'daily-sales'];
-
-          if (!fn && !AvoidAlert.includes(reportKey)) {
-            alert('SQL template not available for this report');
-            return;
+          // Format dates
+          if (isDateColumn(key) || (val && typeof val === 'string' && (val.match(/^\d{4}-\d{2}-\d{2}/) || val.match(/^\d{2}\/\d{2}\/\d{4}/)))) {
+            val = formatDate(val);
+          } else if (typeof val === 'number') {
+            // Don't format ID columns with commas - show as plain number
+            if (isIdColumn(key)) {
+              val = val.toString(); // Convert to string without formatting
+            } else {
+              val = formatNumber(val, val % 1 ? 2 : 0);
+            }
+          } else if (typeof val === 'string') {
+            // Remove prefixes from item names
+            val = removeItemPrefix(val);
           }
 
-  const sql = fn({
-    audience,
-    N,
-    start,
-    end
-  });
+          return `<td class="px-4 py-3 text-sm border border-gray-300 text-gray-700">${val ?? ''}</td>`;
+        }).join('');
+        return `<tr class="hover:bg-gray-100 ${rowClass}">${cells}</tr>`;
+      }).join('');
 
-  // Submit form to backend to execute SQL
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = '/reports/run';
+      document.getElementById('tableBody').innerHTML = rowsHTML;
 
+      if (document.getElementById('rowsCount'))
+        document.getElementById('rowsCount').textContent = `${data.length} rows`;
 
-  const csrfToken = document.querySelector('meta[name="csrf-token"]');
-  if (csrfToken) {
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = '_token';
-    csrfInput.value = csrfToken.content;
-    form.appendChild(csrfInput);
-  }
-
-  const sqlInput = document.createElement('input');
-  sqlInput.type = 'hidden';
-  sqlInput.name = 'sql';
-  sqlInput.value = sql;
-  form.appendChild(sqlInput);
-
-  const reportKeyInput = document.createElement('input');
-  reportKeyInput.type = 'hidden';
-  reportKeyInput.name = 'report_key';
-  reportKeyInput.value = reportKey;
-  form.appendChild(reportKeyInput);
-
-  // Add date filters
-  const startDateInput = document.createElement('input');
-  startDateInput.type = 'hidden';
-  startDateInput.name = 'start_date';
-  startDateInput.value = start;
-  form.appendChild(startDateInput);
-
-  const endDateInput = document.createElement('input');
-  endDateInput.type = 'hidden';
-  endDateInput.name = 'end_date';
-  endDateInput.value = end;
-  form.appendChild(endDateInput);
-
-  document.body.appendChild(form);
-  form.submit();
-  setTimeout(() => hidePageLoader(), 10000);
-}
-
-// Search functionality
-document.getElementById('report-search').addEventListener('input', (e) => {
-  const searchTerm = e.target.value.toLowerCase().trim();
-
-  const sectionHeaders = document.querySelectorAll('.section-header');
-  const reportButtons = document.querySelectorAll('.rep-btn');
-
-  // 🔹 If search term is empty → show section headers again
-  if (searchTerm === '') {
-    sectionHeaders.forEach(el => el.style.display = '');
-  } else {
-    sectionHeaders.forEach(el => el.style.display = 'none');
-  }
-
-  // 🔹 Filter report buttons
-  reportButtons.forEach(btn => {
-    const text = btn.textContent.toLowerCase();
-    const listItem = btn.closest('li');
-
-    if (text.includes(searchTerm) || searchTerm === '') {
-      listItem.style.display = '';
-    } else {
-      listItem.style.display = 'none';
+      // Render pagination
+      renderPagination(data.length);
     }
-  });
-});
+
+    // Render chart - IMPROVED to handle AI queries
+    function renderChart(data, reportKey, chartType = 'line') {
+      if (!data || data.length === 0) {
+        showChartMessage('No data available to create chart.');
+        return;
+      }
+
+      const canvas = document.getElementById('dataChart');
+      if (!canvas) {
+        console.warn('Chart canvas not found.');
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+
+      if (currentChart) {
+        currentChart.destroy();
+      }
+
+      let labels = [];
+      let values = [];
+      let chartTitle = '';
+      let valueLabel = '';
+
+      // --- GENERIC CHART LOGIC for AI queries ---
+      const keys = Object.keys(data[0]);
+
+      // Find the first string/text column for labels
+      const labelKey = keys.find(key => typeof data[0][key] === 'string');
+
+      // Find the first numeric column for values
+      const valueKey = keys.find(key => typeof data[0][key] === 'number');
+
+      if (!labelKey || !valueKey) {
+        showChartMessage('Could not find appropriate columns for chart (need at least one text and one numeric column).');
+        return;
+      }
+
+      labels = data.map(row => removeItemPrefix(row[labelKey]));
+      values = data.map(row => {
+        const val = row[valueKey];
+        return typeof val === 'number' ? val : 0;
+      });
+      valueLabel = valueKey.replace(/_/g, ' ');
+
+      // --- If all values are zero or invalid, also skip ---
+      if (values.every(v => v === 0)) {
+        showChartMessage('Chart cannot be created because all values are zero or invalid.');
+        return;
+      }
+
+      // --- Chart colors and config ---
+      const colors = ['#A71930', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#059669', '#0891b2'];
+
+      const chartConfig = {
+        type: chartType,
+        data: {
+          labels,
+          datasets: [{
+            label: valueLabel,
+            data: values,
+            backgroundColor: chartType === 'line' ? 'rgba(167, 25, 48, 0.1)' : colors,
+            borderColor: chartType === 'line' ? '#A71930' : '#ffffff',
+            borderWidth: 2,
+            fill: chartType === 'line',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: chartType === 'pie',
+              position: 'right'
+            },
+            title: {
+              display: true,
+              text: chartTitle,
+              font: {
+                size: 16,
+                weight: 'bold'
+              },
+              padding: 20
+            }
+          },
+          scales: chartType !== 'pie' ? {
+            y: {
+              beginAtZero: true
+            }
+          } : undefined
+        }
+      };
+
+      currentChart = new Chart(ctx, chartConfig);
+      currentChartType = chartType;
+    }
+
+    // Helper function to show fallback message
+    function showChartMessage(message) {
+      const container = document.getElementById('chartContainer') || document.body;
+      const msgElement = document.createElement('div');
+      msgElement.textContent = message;
+      msgElement.style.textAlign = 'center';
+      msgElement.style.color = '#6b7280';
+      msgElement.style.padding = '2rem';
+      msgElement.style.fontStyle = 'italic';
+      msgElement.style.fontSize = '1rem';
+
+      const canvas = document.getElementById('dataChart');
+      if (canvas && canvas.parentNode) {
+        canvas.parentNode.replaceChild(msgElement, canvas);
+      } else {
+        container.appendChild(msgElement);
+      }
+    }
 
 
-// Tab switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.tab-btn').forEach(b => {
-      b.classList.remove('active');
-      b.classList.add('border-transparent', 'text-gray-600');
-      b.style.borderColor = 'transparent';
-      b.style.color = '#6b7280';
-    });
+    // Load report - submit SQL to backend
+    function loadReport(reportKey) {
+      currentReportKey = reportKey;
 
-    this.classList.remove('border-transparent', 'text-gray-600');
-    this.classList.add('active');
-    this.style.borderColor = '#A71930';
-    this.style.color = '#A71930';
+      // Store report key in sessionStorage to persist across page reload
+      sessionStorage.setItem('currentReportKey', reportKey);
 
-    document.querySelectorAll('.tab-content').forEach(content => {
-      content.classList.add('hidden');
-    });
+      const reportTitle = TITLES[reportKey] || 'Report';
+      document.getElementById('active-report-title').textContent = reportTitle;
+      localStorage.setItem('activeReportTitle', reportTitle);
 
-    document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
-  });
-});
-
-// Report buttons (only for buttons, not anchor links)
-document.querySelectorAll('.rep-btn').forEach(btn => {
-  btn.addEventListener('click', function(e) {
-    // If it's an anchor tag, add date parameters and let it navigate
-    if (this.tagName === 'A') {
+      // Get dates from date range picker
+      let start, end;
       if (dateRangePicker && dateRangePicker.selectedDates && dateRangePicker.selectedDates.length === 2) {
         const selectedDates = dateRangePicker.selectedDates;
-        const start = selectedDates[0].toISOString().split('T')[0];
-        const end = selectedDates[1].toISOString().split('T')[0];
-        const url = new URL(this.href, window.location.origin);
-        url.searchParams.set('start_date', start);
-        url.searchParams.set('end_date', end);
-        this.href = url.toString();
+        start = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
+        end = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
+
+      } else {
+        // Fallback to default (last month)
+        const defaultEnd = new Date().toISOString().split('T')[0];
+        const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        start = defaultStart;
+        end = defaultEnd;
       }
-      return; // Allow default link behavior
-    }
-    // Only prevent default for buttons
-    e.preventDefault();
-    if (this.dataset.report) {
-      loadReport(this.dataset.report);
-    }
-  });
-});
 
-// Date filter button - reload current report or predefined report with new dates
-document.getElementById('applyDateFilter')?.addEventListener('click', function(e) {
-  e.preventDefault();
-  
-  if (!dateRangePicker || !dateRangePicker.selectedDates || dateRangePicker.selectedDates.length !== 2) {
-    alert('Please select a complete date range (start and end dates)');
-    return;
-  }
-  const selectedDates = dateRangePicker.selectedDates;
-  const start = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
-const end = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
-  // Update hidden inputs in Ask AI form
-  const chatStartDate = document.getElementById('chatStartDate');
-  const chatEndDate = document.getElementById('chatEndDate');
-  
-  if (chatStartDate) chatStartDate.value = start;
-  if (chatEndDate) chatEndDate.value = end;
-  // Check if we have a current report key
-  const currentReportKey = sessionStorage.getItem('currentReportKey');
-  const predefinedType = @json(isset($predefinedType) ? $predefinedType : null);
-  
-  if (currentReportKey && SQLS[currentReportKey]) {
-    // Reload the current custom report with new dates
-    loadReport(currentReportKey);
-  } else if (predefinedType) {
-    // Reload predefined report with new dates
-    window.location.href = `/reports/predefined/${predefinedType}?start_date=${start}&end_date=${end}`;
-  } else {
-    // No active report, just update the dates for future use
-    console.log('Date filter updated. Select a report to apply the filter.');
-  }
-});
+      // Generate SQL for this report
+      const audience = 'all';
+      const N = 100;
+      const fn = SQLS[reportKey];
 
-// Chart type switching
-document.querySelectorAll('.chart-type-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.chart-type-btn').forEach(b => {
-      b.classList.remove('active', 'bg-gray-200');
-      b.classList.add('bg-gray-100');
+      const AvoidAlert = ['refunds', 'payments-by-method', 'revenue-by-franchise', 'top-items', 'daily-sales'];
+
+      if (!fn && !AvoidAlert.includes(reportKey)) {
+        alert('SQL template not available for this report');
+        return;
+      }
+
+      const sql = fn({
+        audience,
+        N,
+        start,
+        end
+      });
+
+      // Submit form to backend to execute SQL
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/reports/run';
+
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]');
+      if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken.content;
+        form.appendChild(csrfInput);
+      }
+
+      const sqlInput = document.createElement('input');
+      sqlInput.type = 'hidden';
+      sqlInput.name = 'sql';
+      sqlInput.value = sql;
+      form.appendChild(sqlInput);
+
+      const reportKeyInput = document.createElement('input');
+      reportKeyInput.type = 'hidden';
+      reportKeyInput.name = 'report_key';
+      reportKeyInput.value = reportKey;
+      form.appendChild(reportKeyInput);
+
+      // Add date filters
+      const startDateInput = document.createElement('input');
+      startDateInput.type = 'hidden';
+      startDateInput.name = 'start_date';
+      startDateInput.value = start;
+      form.appendChild(startDateInput);
+
+      const endDateInput = document.createElement('input');
+      endDateInput.type = 'hidden';
+      endDateInput.name = 'end_date';
+      endDateInput.value = end;
+      form.appendChild(endDateInput);
+
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(() => hidePageLoader(), 10000);
+    }
+
+    // Search functionality
+    document.getElementById('report-search').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase().trim();
+
+      const sectionHeaders = document.querySelectorAll('.section-header');
+      const reportButtons = document.querySelectorAll('.rep-btn');
+
+      // 🔹 If search term is empty → show section headers again
+      if (searchTerm === '') {
+        sectionHeaders.forEach(el => el.style.display = '');
+      } else {
+        sectionHeaders.forEach(el => el.style.display = 'none');
+      }
+
+      // 🔹 Filter report buttons
+      reportButtons.forEach(btn => {
+        const text = btn.textContent.toLowerCase();
+        const listItem = btn.closest('li');
+
+        if (text.includes(searchTerm) || searchTerm === '') {
+          listItem.style.display = '';
+        } else {
+          listItem.style.display = 'none';
+        }
+      });
     });
 
-    this.classList.add('active', 'bg-gray-200');
-    this.classList.remove('bg-gray-100');
 
-    if (currentData.length > 0) {
-      renderChart(currentData, currentReportKey, this.dataset.chartType);
-    }
-  });
-});
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.classList.add('border-transparent', 'text-gray-600');
+          b.style.borderColor = 'transparent';
+          b.style.color = '#6b7280';
+        });
 
-// Query chip buttons - auto-fill and submit form
-document.querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', function() {
-    const query = this.textContent.trim();
-    const chatInput = document.getElementById('chatInput');
-    const chatForm = document.getElementById('chatForm');
-    
-    if (chatInput && chatForm) {
-      chatInput.value = query;
-      chatForm.submit();
-    }
-  });
-});
+        this.classList.remove('border-transparent', 'text-gray-600');
+        this.classList.add('active');
+        this.style.borderColor = '#A71930';
+        this.style.color = '#A71930';
 
-// Popular query pills - FIXED
-let selectedPopularQuery = '';
-document.querySelectorAll('.popular-query-pill').forEach(pill => {
-  pill.addEventListener('click', function() {
-    document.querySelectorAll('.popular-query-pill').forEach(p => {
-      p.classList.remove('bg-gray-800', 'text-white');
-      p.classList.add('bg-gray-100', 'text-gray-700');
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.add('hidden');
+        });
+
+        document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+      });
     });
 
-    this.classList.remove('bg-gray-100', 'text-gray-700');
-    this.classList.add('bg-gray-800', 'text-white');
-    selectedPopularQuery = this.dataset.query;
-    
-    // Auto-fill the chat input
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-      chatInput.value = selectedPopularQuery;
-    }
-  });
-});
+    // Report buttons (only for buttons, not anchor links)
+    document.querySelectorAll('.rep-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        // If it's an anchor tag, add date parameters and let it navigate
+        if (this.tagName === 'A') {
+          if (dateRangePicker && dateRangePicker.selectedDates && dateRangePicker.selectedDates.length === 2) {
+            const selectedDates = dateRangePicker.selectedDates;
+            const start = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
+            const end = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
+            const url = new URL(this.href, window.location.origin);
+            url.searchParams.set('start_date', start);
+            url.searchParams.set('end_date', end);
+            this.href = url.toString();
+          }
+          return; // Allow default link behavior
+        }
+        // Only prevent default for buttons
+        e.preventDefault();
+        if (this.dataset.report) {
+          loadReport(this.dataset.report);
+        }
+      });
+    });
 
-// Remove the runPopularQuery button listener if it exists
-const runPopularBtn = document.getElementById('runPopularQuery');
-if (runPopularBtn) {
-  runPopularBtn.addEventListener('click', function() {
-    if (!selectedPopularQuery) {
-      alert('Please select a query first');
-      return;
-    }
-    const chatInput = document.getElementById('chatInput');
-    const chatForm = document.getElementById('chatForm');
-    if (chatInput && chatForm) {
-      chatInput.value = selectedPopularQuery;
-      chatForm.submit();
-    }
-  });
+    // Date filter button - reload current report or predefined report with new dates
+    document.getElementById('applyDateFilter')?.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      if (!dateRangePicker || !dateRangePicker.selectedDates || dateRangePicker.selectedDates.length !== 2) {
+        alert('Please select a complete date range (start and end dates)');
+        return;
+      }
+      const selectedDates = dateRangePicker.selectedDates;
+      const start = dateRangePicker.formatDate(selectedDates[0], "Y-m-d");
+      const end = dateRangePicker.formatDate(selectedDates[1], "Y-m-d");
+      // Update hidden inputs in Ask AI form
+      const chatStartDate = document.getElementById('chatStartDate');
+      const chatEndDate = document.getElementById('chatEndDate');
+
+      if (chatStartDate) chatStartDate.value = start;
+      if (chatEndDate) chatEndDate.value = end;
+      // Check if we have a current report key
+      const currentReportKey = sessionStorage.getItem('currentReportKey');
+      const predefinedType = @json(isset($predefinedType) ? $predefinedType : null);
+
+      if (predefinedType) {
+  // Reload predefined report with new dates
+  window.location.href =
+    `/reports/predefined/${predefinedType}?start_date=${start}&end_date=${end}`;
+} else if (currentReportKey && SQLS[currentReportKey]) {
+  // Reload custom SQL report
+  loadReport(currentReportKey);
+} else {
+  console.log('Date filter updated. Select a report to apply the filter.');
 }
-
-// Last query pills - FIXED
-let selectedLastQuery = '';
-document.querySelectorAll('.last-query-pill').forEach(pill => {
-  pill.addEventListener('click', function() {
-    document.querySelectorAll('.last-query-pill').forEach(p => {
-      p.classList.remove('bg-gray-800', 'text-white');
-      p.classList.add('bg-gray-100', 'text-gray-700');
     });
 
-    this.classList.remove('bg-gray-100', 'text-gray-700');
-    this.classList.add('bg-gray-800', 'text-white');
-    selectedLastQuery = this.dataset.query;
-    
-    // Auto-fill the chat input
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-      chatInput.value = selectedLastQuery;
-    }
-  });
-});
+    // Chart type switching
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.chart-type-btn').forEach(b => {
+          b.classList.remove('active', 'bg-gray-200');
+          b.classList.add('bg-gray-100');
+        });
 
-// Remove the runLastQuery button listener if it exists
-const runLastBtn = document.getElementById('runLastQuery');
-if (runLastBtn) {
-  runLastBtn.addEventListener('click', function() {
-    if (!selectedLastQuery) {
-      alert('Please select a query first');
-      return;
-    }
-    const chatInput = document.getElementById('chatInput');
-    const chatForm = document.getElementById('chatForm');
-    if (chatInput && chatForm) {
-      chatInput.value = selectedLastQuery;
-      chatForm.submit();
-    }
-  });
-}
+        this.classList.add('active', 'bg-gray-200');
+        this.classList.remove('bg-gray-100');
 
-function showPageLoader() {
+        if (currentData.length > 0) {
+          renderChart(currentData, currentReportKey, this.dataset.chartType);
+        }
+      });
+    });
 
-  const loader = document.createElement('div');
-  loader.id = 'page-loader';
-  loader.innerHTML = `
+    // Query chip buttons - auto-fill and submit form
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        const query = this.textContent.trim();
+        const chatInput = document.getElementById('chatInput');
+        const chatForm = document.getElementById('chatForm');
+
+        if (chatInput && chatForm) {
+          chatInput.value = query;
+          chatForm.submit();
+        }
+      });
+    });
+
+    // Popular query pills - FIXED
+    let selectedPopularQuery = '';
+    document.querySelectorAll('.popular-query-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.popular-query-pill').forEach(p => {
+          p.classList.remove('bg-gray-800', 'text-white');
+          p.classList.add('bg-gray-100', 'text-gray-700');
+        });
+
+        this.classList.remove('bg-gray-100', 'text-gray-700');
+        this.classList.add('bg-gray-800', 'text-white');
+        selectedPopularQuery = this.dataset.query;
+
+        // Auto-fill the chat input
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+          chatInput.value = selectedPopularQuery;
+        }
+      });
+    });
+
+    // Remove the runPopularQuery button listener if it exists
+    const runPopularBtn = document.getElementById('runPopularQuery');
+    if (runPopularBtn) {
+      runPopularBtn.addEventListener('click', function() {
+        if (!selectedPopularQuery) {
+          alert('Please select a query first');
+          return;
+        }
+        const chatInput = document.getElementById('chatInput');
+        const chatForm = document.getElementById('chatForm');
+        if (chatInput && chatForm) {
+          chatInput.value = selectedPopularQuery;
+          chatForm.submit();
+        }
+      });
+    }
+
+    // Last query pills - FIXED
+    let selectedLastQuery = '';
+    document.querySelectorAll('.last-query-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.last-query-pill').forEach(p => {
+          p.classList.remove('bg-gray-800', 'text-white');
+          p.classList.add('bg-gray-100', 'text-gray-700');
+        });
+
+        this.classList.remove('bg-gray-100', 'text-gray-700');
+        this.classList.add('bg-gray-800', 'text-white');
+        selectedLastQuery = this.dataset.query;
+
+        // Auto-fill the chat input
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+          chatInput.value = selectedLastQuery;
+        }
+      });
+    });
+
+    // Remove the runLastQuery button listener if it exists
+    const runLastBtn = document.getElementById('runLastQuery');
+    if (runLastBtn) {
+      runLastBtn.addEventListener('click', function() {
+        if (!selectedLastQuery) {
+          alert('Please select a query first');
+          return;
+        }
+        const chatInput = document.getElementById('chatInput');
+        const chatForm = document.getElementById('chatForm');
+        if (chatInput && chatForm) {
+          chatInput.value = selectedLastQuery;
+          chatForm.submit();
+        }
+      });
+    }
+
+    function showPageLoader() {
+
+      const loader = document.createElement('div');
+      loader.id = 'page-loader';
+      loader.innerHTML = `
     <div style="
       position: fixed;
       inset: 0;
@@ -2016,135 +2041,138 @@ function showPageLoader() {
     </div>
   `;
 
-  // Add CSS animation keyframes if not already added
-  if (!document.getElementById('loader-style')) {
-    const style = document.createElement('style');
-    style.id = 'loader-style';
-    style.textContent = `
+      // Add CSS animation keyframes if not already added
+      if (!document.getElementById('loader-style')) {
+        const style = document.createElement('style');
+        style.id = 'loader-style';
+        style.textContent = `
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
     `;
-    document.head.appendChild(style);
-  }
-
-  document.body.appendChild(loader);
-}
-
-function hidePageLoader() {
-  const loader = document.getElementById('page-loader');
-  if (loader) loader.remove();
-}
-document.getElementById('chatForm').addEventListener('submit', function () {
-  showPageLoader(); // 🔹 Show your existing page loader
-});
-
-
-// Initialize page with server data if available
-if (serverData && serverData.length > 0) {
-  currentData = serverData;
-  renderTable(serverData);
-  // Render chart for any data (not just specific report keys)
-  renderChart(serverData, serverReportKey, currentChartType);
-}
-
-function exportTableToCSV(filename) {
-    // Use allTableData if available (contains all data, not just paginated), 
-    // otherwise try to get from currentData or serverData
-    let dataToExport = allTableData && allTableData.length > 0 ? allTableData : (currentData && currentData.length > 0 ? currentData : (serverData && serverData.length > 0 ? serverData : []));
-    
-    // If no data in variables, try to read from DOM table as fallback
-    if (!dataToExport || dataToExport.length === 0) {
-      const rows = document.querySelectorAll("#dataTable tbody tr");
-      if (!rows.length || rows[0].querySelector('td[colspan]')) {
-        alert("No data to export.");
-        return;
+        document.head.appendChild(style);
       }
-      
-      // Read headers from thead
-      const headers = Array.from(document.querySelectorAll("#dataTable thead th"))
-        .map(th => th.innerText.trim().replace(/\s+/g, '_'));
-      
-      // Read data from tbody
-      const csv = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",")];
-      rows.forEach(row => {
-        const cols = row.querySelectorAll("td");
-        if (cols.length > 0) {
-          const rowData = Array.from(cols)
-            .map(col => {
-              const text = col.innerText.trim();
-              // Escape quotes and wrap in quotes
-              return `"${text.replace(/"/g, '""')}"`;
-            })
-            .join(",");
-          csv.push(rowData);
+
+      document.body.appendChild(loader);
+    }
+
+    function hidePageLoader() {
+      const loader = document.getElementById('page-loader');
+      if (loader) loader.remove();
+    }
+    document.getElementById('chatForm').addEventListener('submit', function() {
+      showPageLoader(); // 🔹 Show your existing page loader
+    });
+
+
+    // Initialize page with server data if available
+    if (serverData && serverData.length > 0) {
+      currentData = serverData;
+      renderTable(serverData);
+      // Render chart for any data (not just specific report keys)
+      renderChart(serverData, serverReportKey, currentChartType);
+    }
+
+    function exportTableToCSV(filename) {
+      // Use allTableData if available (contains all data, not just paginated), 
+      // otherwise try to get from currentData or serverData
+      let dataToExport = allTableData && allTableData.length > 0 ? allTableData : (currentData && currentData.length > 0 ? currentData : (serverData && serverData.length > 0 ? serverData : []));
+
+      // If no data in variables, try to read from DOM table as fallback
+      if (!dataToExport || dataToExport.length === 0) {
+        const rows = document.querySelectorAll("#dataTable tbody tr");
+        if (!rows.length || rows[0].querySelector('td[colspan]')) {
+          alert("No data to export.");
+          return;
         }
-      });
-      
-      if (csv.length <= 1) {
-        alert("No data to export.");
+
+        // Read headers from thead
+        const headers = Array.from(document.querySelectorAll("#dataTable thead th"))
+          .map(th => th.innerText.trim().replace(/\s+/g, '_'));
+
+        // Read data from tbody
+        const csv = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",")];
+        rows.forEach(row => {
+          const cols = row.querySelectorAll("td");
+          if (cols.length > 0) {
+            const rowData = Array.from(cols)
+              .map(col => {
+                const text = col.innerText.trim();
+                // Escape quotes and wrap in quotes
+                return `"${text.replace(/"/g, '""')}"`;
+              })
+              .join(",");
+            csv.push(rowData);
+          }
+        });
+
+        if (csv.length <= 1) {
+          alert("No data to export.");
+          return;
+        }
+
+        const blob = new Blob([csv.join("\n")], {
+          type: "text/csv;charset=utf-8;"
+        });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         return;
       }
-      
-      const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+
+      // Export from data array (preferred method - exports all data, not just visible rows)
+      // Get headers from first row
+      const headers = Object.keys(dataToExport[0]);
+      const csv = [headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(",")];
+
+      // Add data rows
+      dataToExport.forEach(row => {
+        const rowData = headers.map(header => {
+          let value = row[header];
+          // Handle null/undefined
+          if (value === null || value === undefined) {
+            value = '';
+          }
+          // Convert to string and escape quotes
+          const text = String(value).replace(/"/g, '""');
+          return `"${text}"`;
+        });
+        csv.push(rowData.join(","));
+      });
+
+      const blob = new Blob([csv.join("\n")], {
+        type: "text/csv;charset=utf-8;"
+      });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      return;
     }
-    
-    // Export from data array (preferred method - exports all data, not just visible rows)
-    // Get headers from first row
-    const headers = Object.keys(dataToExport[0]);
-    const csv = [headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(",")];
-    
-    // Add data rows
-    dataToExport.forEach(row => {
-      const rowData = headers.map(header => {
-        let value = row[header];
-        // Handle null/undefined
-        if (value === null || value === undefined) {
-          value = '';
-        }
-        // Convert to string and escape quotes
-        const text = String(value).replace(/"/g, '""');
-        return `"${text}"`;
-      });
-      csv.push(rowData.join(","));
-    });
-    
-    const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-  // Toggle SQL visibility (if element exists)
-  const toggleSqlBtn = document.getElementById('toggleSql');
-  if (toggleSqlBtn) {
-    toggleSqlBtn.addEventListener('click', () => {
-      const container = document.getElementById('sqlContainer');
-      const icon = toggleSqlBtn.querySelector('i');
-      
-      if (container && container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        if (icon) icon.setAttribute('data-lucide', 'eye-off');
-      } else if (container) {
-        container.classList.add('hidden');
-        if (icon) icon.setAttribute('data-lucide', 'eye');
-      }
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
-    });
-  }
+    // Toggle SQL visibility (if element exists)
+    const toggleSqlBtn = document.getElementById('toggleSql');
+    if (toggleSqlBtn) {
+      toggleSqlBtn.addEventListener('click', () => {
+        const container = document.getElementById('sqlContainer');
+        const icon = toggleSqlBtn.querySelector('i');
 
+        if (container && container.classList.contains('hidden')) {
+          container.classList.remove('hidden');
+          if (icon) icon.setAttribute('data-lucide', 'eye-off');
+        } else if (container) {
+          container.classList.add('hidden');
+          if (icon) icon.setAttribute('data-lucide', 'eye');
+        }
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      });
+    }
   </script>
 </body>
 

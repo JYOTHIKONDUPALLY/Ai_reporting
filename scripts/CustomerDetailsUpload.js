@@ -253,6 +253,10 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
                    AND status IN (1,6)`,
                 [row.id]
             );
+            const CustomerName = [row.firstName, row.middleName, row.lastName]
+  .map(v => v?.trim())
+  .filter(Boolean)
+  .join(' ');
 
             batchValues.push({
                 id: row.id,
@@ -260,7 +264,7 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
                 franchise: "88 Tactical",
                 provider_id: serviceProviderId,
                 provider: serviceProviderName[0]?.name || '',
-                CustomerName: `${row.firstName || ''} ${row.middleName || ''} ${row.lastName || ''}`.trim(),
+                CustomerName:  CustomerName.replace(/\s+/g, ' '),
                 FirstName: row.firstName || '',
                 MiddleName: row.middleName || '',
                 LastName: row.lastName || '',
