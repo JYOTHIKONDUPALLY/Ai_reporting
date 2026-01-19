@@ -81,14 +81,14 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
-async function getDistinctServiceProviders(mysqlConn) {
-  const [rows] = await mysqlConn.execute(`
-    SELECT DISTINCT id as serviceProviderId
-    FROM serviceProvider
-    WHERE status = 1
-  `);
-  return rows.map(r => r.serviceProviderId);
-}
+// async function getDistinctServiceProviders(mysqlConn) {
+//   const [rows] = await mysqlConn.execute(`
+//     SELECT DISTINCT id as serviceProviderId
+//     FROM serviceProvider
+//     WHERE status = 1
+//   `);
+//   return rows.map(r => r.serviceProviderId);
+// }
 
 async function createInvoiceTable(clickhouse, tableName) {
   const createQuery = `
@@ -523,14 +523,15 @@ async function migrateData() {
   });
 
   try {
-    const providerIds = await getDistinctServiceProviders(mysqlConn);
-    console.log(`🔑 Found ${providerIds.length} service providers`);
-    for (const providerId of providerIds) {
+    // const providerIds = await getDistinctServiceProviders(mysqlConn);
+    // console.log(`🔑 Found ${providerIds.length} service providers`);
+    // for (const providerId of providerIds) {
+    const providerId = 2087;
       const tableName = `memberships_${providerId}`;
-      console.log(`\n🚀 Migrating provider ${providerId}`);
+      // console.log(`\n🚀 Migrating provider ${providerId}`);
       await createInvoiceTable(clickhouse, tableName);
     await migrateMembership(mysqlConn, clickhouse, providerId);
-    }
+    // }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();

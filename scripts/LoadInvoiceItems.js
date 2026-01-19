@@ -34,14 +34,14 @@ async function updateLastMigratedId(clickhouse, tableName, lastId, totalRecords)
   console.log("updated the last migrated id");
 }
 
-async function getDistinctServiceProviders(mysqlConn) {
-  const [rows] = await mysqlConn.execute(`
-    SELECT DISTINCT serviceProviderId
-    FROM invoiceItemNew
-    WHERE status = 1
-  `);
-  return rows.map(r => r.serviceProviderId);
-}
+// async function getDistinctServiceProviders(mysqlConn) {
+//   const [rows] = await mysqlConn.execute(`
+//     SELECT DISTINCT serviceProviderId
+//     FROM invoiceItemNew
+//     WHERE status = 1
+//   `);
+//   return rows.map(r => r.serviceProviderId);
+// }
 
 async function createInvoiceTable(clickhouse, tableName) {
   const createQuery = `
@@ -265,6 +265,17 @@ async function getCategoryAndSubcategory(type, itemId, mysqlConn) {
   return { category, subcategory };
 }
 
+  function removeItemPrefix(name) {
+    if (!name) return name;
+    const str = String(name).trim();
+    const prefixes = ['product:', 'service:', 'class:', 'membership:', 'appointment:', 'package:'];
+    for (const prefix of prefixes) {
+      if (str.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return str.substring(prefix.length).trim();
+      }
+    }
+    return str;
+  }
 async function deriveItemName(type, itemId, rawName, mysqlConn) {
   if (!type || !itemId) return removeItemPrefix(rawName);
 
@@ -388,17 +399,7 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, serviceProviderId, bat
   const safeStr = (v, def = '') => (v === null || v === undefined ? def : String(v));
 
   // Remove prefixes from item names (e.g., "product: ", "service: ", etc.)
-  function removeItemPrefix(name) {
-    if (!name) return name;
-    const str = String(name).trim();
-    const prefixes = ['product:', 'service:', 'class:', 'membership:', 'appointment:', 'package:'];
-    for (const prefix of prefixes) {
-      if (str.toLowerCase().startsWith(prefix.toLowerCase())) {
-        return str.substring(prefix.length).trim();
-      }
-    }
-    return str;
-  }
+
 
   // Format dates for ClickHouse (DateTime)
   function formatDate(dateValue) {
@@ -592,11 +593,12 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, serviceProviderId, bat
 
 async function migrateData() {
 
-  const mysqlConn = await mysql.createConnection({
-    host: 'reader-temp.cs3e3cx0hfys.us-west-2.rds.amazonaws.com',   // or your DB host
-    user: 'bizzflo',        // your DB username
-    password: 'my5qlskeedazz!!',// your DB password
-    database: 'bizzflo'   // your DB name
+ 
+	  const mysqlConn = await mysql.createConnection({
+		host: 'reader-temp.cs3e3cx0hfys.us-west-2.rds.amazonaws.com',   // or your DB host
+		user: 'bizzflo',        // your DB username
+		password: 'my5qlskeedazz!!',// your DB password
+		database: 'bizzflo'   // your DB name
   });
 
   console.log("✅ Connected to MySQL!");
@@ -611,15 +613,16 @@ async function migrateData() {
   });
 
   try {
-    const providerIds = await getDistinctServiceProviders(mysqlConn);
-    console.log(`🔑 Found ${providerIds.length} service providers`);
-    for (const providerId of providerIds) {
+    // const providerIds = await getDistinctServiceProviders(mysqlConn);
+    // console.log(`🔑 Found ${providerIds.length} service providers`);
+    // for (const providerId of providerIds) {
+      const providerId = 2087;
       const tableName = `invoice_items_detail_${providerId}`;
-      console.log(`\n🚀 Migrating provider ${providerId}`);
+      // console.log(`\n🚀 Migrating provider ${providerId}`);
 
       await createInvoiceTable(clickhouse, tableName);
       await migrateInvoiceItems(mysqlConn, clickhouse, providerId);
-    }
+    // }
   } finally {
     await mysqlConn.end();
     await clickhouse.close();
