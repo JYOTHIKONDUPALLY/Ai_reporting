@@ -746,10 +746,10 @@ ranked_products AS (
         tc.customer_id,
         tc.customer_name,
         iid.item_name,
-        SUM(iid.total_price) AS total_spent,
+        SUM(iid.total_price-iid.refund_amount) AS total_spent,
         ROW_NUMBER() OVER (
             PARTITION BY tc.customer_id
-            ORDER BY SUM(iid.total_price) DESC
+            ORDER BY SUM(iid.total_price-iid.refund_amount) DESC
         ) AS rn
     FROM top_customers AS tc
     INNER JOIN invoice_details AS id
@@ -836,14 +836,25 @@ LIMIT ${N};`
         }
         return `/* Customers whose first purchase was a service */
 WITH first_dt AS (
-  SELECT customer_id, min(invoice_date) AS first_date FROM invoice_details GROUP BY customer_id
+    SELECT customer_id, 
+           MIN(invoice_date) AS first_date
+    FROM invoice_details
+    GROUP BY customer_id
 )
-SELECT distinct o.customer_name as CustomerName, oi.item_name as Service, formatDateTime(ft.first_date, '%d %b %Y') as First_Purchase_Date
+SELECT 
+    o.customer_name AS CustomerName,
+    groupArray(oi.item_name) AS Services,
+    formatDateTime(ft.first_date, '%d %b %Y') AS First_Purchase_Date
 FROM first_dt ft
-INNER JOIN invoice_details o ON o.customer_id=ft.customer_id 
-AND o.invoice_date=ft.first_date
-INNER JOIN invoice_items_detail oi ON oi.invoice_id=o.id
-WHERE oi.item_type='service' ${dateFilter}`
+INNER JOIN invoice_details o 
+    ON o.customer_id = ft.customer_id 
+    AND o.invoice_date = ft.first_date
+INNER JOIN invoice_items_detail oi 
+    ON oi.invoice_id = o.id
+WHERE oi.item_type = 'service'
+   ${dateFilter}
+GROUP BY o.customer_name, ft.first_date
+ORDER BY o.customer_name;`
       },
       range_busiest_month: ({
         start,
@@ -851,14 +862,22 @@ WHERE oi.item_type='service' ${dateFilter}`
         audience
       }) => {
         let dateFilter = '';
-        if (start && end) {
-          dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
-        } else {
-          const defaultEnd = new Date().toISOString().split('T')[0];
-          const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
-        }
-        return `/* Range busiest month by distinct customers */
+if (start && end) {
+  dateFilter = `AND o.invoice_date BETWEEN toDate('${start}') AND toDate('${end}')`;
+} else {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // Start from January 1st of current year
+  const defaultStart = `${currentYear}-01-01`;
+  
+  // End at today's date
+  const defaultEnd = now.toISOString().split('T')[0];
+  
+  dateFilter = `AND o.invoice_date BETWEEN toDate('${defaultStart}') AND toDate('${defaultEnd}')`;
+}
+
+return `/* Range busiest month by distinct customers */
 SELECT 
     formatDateTime(o.invoice_date, '%b %y') AS yyyymm, 
     countDistinct(o.customer_id) AS customers
@@ -873,31 +892,24 @@ ${dateFilter}
 GROUP BY yyyymm
 ORDER BY customers DESC
 LIMIT 1;`
-      },
+      }
+  ,
       range_busiest_dow: ({
-        audience,
-        start,
-        end
-      }) => {
-        let dateFilter = '';
-        if (start && end) {
-          // Get dates from 12 months ago
-          const startDate = new Date(start);
-          const endDate = new Date(end);
-          startDate.setMonth(startDate.getMonth() - 12);
-          endDate.setMonth(endDate.getMonth() - 12);
-          const start12MonthsAgo = startDate.toISOString().split('T')[0];
-          const end12MonthsAgo = endDate.toISOString().split('T')[0];
-          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
-        } else {
-          const defaultEnd = new Date();
-          const defaultStart = new Date();
-          defaultStart.setMonth(defaultStart.getMonth() - 12);
-          const start12MonthsAgo = defaultStart.toISOString().split('T')[0];
-          const end12MonthsAgo = defaultEnd.toISOString().split('T')[0];
-          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
-        }
-        return `/* Busiest day of week (avg last 12 months) */
+  audience,
+  start,
+  end
+}) => {
+  let dateFilter = '';
+  if (start && end) {
+    dateFilter = `AND o.invoice_date >= toDate('${start}') AND o.invoice_date <= toDate('${end}')`;
+  } else {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const defaultStart = `${currentYear}-01-01`;
+    const defaultEnd = now.toISOString().split('T')[0];
+    dateFilter = `AND o.invoice_date >= toDate('${defaultStart}') AND o.invoice_date <= toDate('${defaultEnd}')`;
+  }
+  return `/* Busiest day of week (avg last 12 months) */
 SELECT toDayOfWeek(o.invoice_date) AS dow,
     arrayElement(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], dow) AS day_name,
     round(countDistinct(o.customer_id) / countDistinct(toDate(o.invoice_date))) AS avg_customers
@@ -908,7 +920,7 @@ WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
   ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
 GROUP BY dow
 ORDER BY avg_customers DESC`
-      },
+},
       cls_popular: ({
         start,
         end,
@@ -1165,7 +1177,6 @@ ORDER BY toStartOfMonth(id.invoice_date) DESC, total_sales DESC`
         return `
   SELECT
     iid.category,
-    iid.item_name,
     COUNT(DISTINCT id.id) as invoice_count,
     sum(iid.quantity) as qty_sold,
     SUM(iid.total_price) as total_sales
@@ -1174,7 +1185,7 @@ INNER JOIN invoice_items_detail iid
     ON id.id = iid.invoice_id
 WHERE iid.item_type = 'product'
     ${dateFilter}
-GROUP BY iid.category, iid.item_name
+GROUP BY iid.category
 ORDER BY iid.category, total_sales DESC`;
       },
       sale_by_subCategory: ({
@@ -1191,7 +1202,6 @@ ORDER BY iid.category, total_sales DESC`;
         }
         return `
   SELECT
-iid.item_name,
     iid.subcategory,
     COUNT(DISTINCT id.id) as invoice_count,
     COUNT(iid.quantity ) as item_count,
@@ -1201,7 +1211,7 @@ INNER JOIN invoice_items_detail iid
     ON id.id = iid.invoice_id
 WHERE iid.item_type = 'product'
     ${dateFilter}
-GROUP BY  iid.item_name, iid.subcategory
+GROUP BY iid.subcategory
 ORDER BY iid.subcategory, total_sales DESC`;
       },
       Trans_count_products: ({

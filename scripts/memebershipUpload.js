@@ -509,11 +509,11 @@ console.log(`✔ Migrated up to ID: ${lastId}`);
 // =====================================================================
 async function migrateData() {
   const mysqlConn = await mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'bizzflo',
-  });
+        host: 'reader-temp.cs3e3cx0hfys.us-west-2.rds.amazonaws.com',
+        user: 'bizzflo',
+        password: 'my5qlskeedazz!!',
+        database: 'bizzflo'
+    });
 
   const clickhouse = createClient({
     url: 'http://localhost:8123',

@@ -87,7 +87,7 @@ public function predefined(Request $request, $type)
                                  GROUP BY payment_method 
                                  ORDER BY collected DESC",
 
-        'refunds' => "SELECT iid.invoice_id, iid.item_name, iid.refund_amount, iid.refund_tax 
+        'refunds' => "SELECT id.invoice_number, iid.item_name, iid.refund_amount, iid.refund_tax 
                       FROM invoice_items_detail iid
                       INNER JOIN invoice_details id ON iid.invoice_id = id.id
                       {$dateFilter}

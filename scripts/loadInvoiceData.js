@@ -301,7 +301,7 @@ console.log(`❌ Migration failed with ${totalErrors} errors:`, errors);
 async function migrateData() {
 
 	  const mysqlConn = await mysql.createConnection({
-		host: 'bizzflo-production-aurora3-cluster.cluster-ro-cs3e3cx0hfys.us-west-2.rds.amazonaws.com',   // or your DB host
+		host: 'reader-temp.cs3e3cx0hfys.us-west-2.rds.amazonaws.com',   // or your DB host
 		user: 'bizzflo',        // your DB username
 		password: 'my5qlskeedazz!!',// your DB password
 		database: 'bizzflo'   // your DB name

@@ -313,7 +313,7 @@ console.log(`✔ Migrated up to ID: ${lastId}`);
 
 async function migrateData() {
    const mysqlConn = await mysql.createConnection({
-        host: 'bizzflo-production-aurora3-cluster.cluster-ro-cs3e3cx0hfys.us-west-2.rds.amazonaws.com',
+        host: 'reader-temp.cs3e3cx0hfys.us-west-2.rds.amazonaws.com',
         user: 'bizzflo',
         password: 'my5qlskeedazz!!',
         database: 'bizzflo'
