@@ -441,7 +441,6 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, serviceProviderId, bat
 
       const data = [];
       for (const r of rows) {
-        lastId = r.id;
         // console.log(`processing datat row id: ${JSON.stringify(r)}`);
         // console.log(`Processing invoice item ID: ${r.id}, Type: ${r.type}, Item type ID: ${r.itemTypeId} with cogs: ${r.cogs}, commission: ${r.commission}`);
         // --- brand/sku/upc lookup for products ---
@@ -552,7 +551,7 @@ async function migrateInvoiceItems(mysqlConn, clickhouse, serviceProviderId, bat
           updated_at: formatDate(r.checkoutDate || r.shipOrPickupDate || new Date())
         });
       }
-
+lastId = Math.max(...rows.map(r => r.id));
       // Insert rows into ClickHouse `invoice_items` table
       if (data.length > 0) {
         try {

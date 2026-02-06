@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System - bizzflo</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 15px;
+            font-size: 14px;
+        }
+        
+        .top-header-bar {
+            background-color: #fff;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .top-header-bar a {
+            color: #007bff;
+            text-decoration: none;
+            margin-left: 5px;
+        }
+        
+        .top-header-bar a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .btn-returns {
+            background-color: #ff9800;
+            color: #fff;
+        }
+        
+        .btn-returns:hover {
+            background-color: #f57c00;
+        }
+        
+        .btn-changeout {
+            background-color: #757575;
+            color: #fff;
+        }
+        
+        .btn-changeout:hover {
+            background-color: #616161;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .right-panel {
+            width: 320px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        
+        .customer-input-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .customer-input-section label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .ticket-section {
+            margin-top: 20px;
+        }
+        
+        .ticket-header {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #333;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-control {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            padding: 12px 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        
+        .table tbody td {
+            padding: 12px 8px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .item-row {
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .item-row:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 12px;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-xs {
+            padding: 2px 6px;
+            font-size: 11px;
+        }
+        
+        .btn-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+        
+        .profile-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: block;
+            margin: 0 auto 15px;
+            border: 3px solid #e0e0e0;
+        }
+        
+        .right-panel h4 {
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .right-panel .fa {
+            margin-right: 8px;
+            color: #666;
+            width: 16px;
+        }
+        
+        .address-section {
+            background-color: #e3f2fd;
+            padding: 18px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border: 1px solid #90caf9;
+        }
+        
+        .address-section strong {
+            color: #1976d2;
+        }
+        
+        .total-section {
+            background-color: #e8f5e9;
+            padding: 18px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border: 1px solid #81c784;
+        }
+        
+        .total-section .row {
+            margin-bottom: 8px;
+        }
+        
+        .amount-payable {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007bff;
+        }
+        
+        .btn-proceed {
+            background-color: #17a2b8;
+            color: #fff;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-proceed:hover {
+            background-color: #138496;
+        }
+        
+        .btn-payment {
+            padding: 10px 12px;
+            margin: 6px 0;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 13px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        
+        .btn-payment:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-advanced {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .btn-credit {
+            background-color: #28a745;
+        }
+        
+        .btn-voucher {
+            background-color: #007bff;
+        }
+        
+        .btn-outstanding {
+            background-color: #dc3545;
+        }
+        
+        .transaction-icons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .icon-box {
+            text-align: center;
+            padding: 12px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            background-color: #fff;
+        }
+        
+        .icon-box:hover {
+            border-color: #007bff;
+            background-color: #f0f7ff;
+        }
+        
+        .icon-box.active {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .icon-box i {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        .subscription-badge {
+            background-color: #e3f2fd;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid #90caf9;
+            color: #1976d2;
+        }
+        
+        .checkbox-inline {
+            margin-top: 8px;
+            font-weight: normal;
+        }
+        
+        .text-danger {
+            color: #dc3545 !important;
+            font-weight: 600;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        
+        .btn[style*="background-color: #e91e63"] {
+            background-color: #e91e63 !important;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+        }
+        
+        .btn[style*="background-color: #e91e63"]:hover {
+            background-color: #c2185b !important;
+        }
+        
+        .input-group-btn .btn {
+            border-left: 0;
+        }
+        
+        .radio-inline {
+            margin-right: 15px;
+            font-weight: normal;
+        }
+        
+        .radio-inline input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        hr {
+            margin: 15px 0;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header Bar -->
+    <div class="top-header-bar">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Location</strong> Atlanta 
+                <a href="#"><i class="fa fa-pencil"></i> change</a>
+            </div>
+            <div class="col-md-3">
+                <strong>Terminal</strong> Aisle 1 
+                <a href="#"><i class="fa fa-pencil"></i> change</a>
+            </div>
+            <div class="col-md-3">
+                <label class="radio-inline">
+                    <input type="radio" name="booking" value="phone"> Phone
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="booking" value="instore" checked> In-Store
+                </label>
+            </div>
+            <div class="col-md-3 text-right">
+                <button class="btn btn-action btn-returns">
+                    <i class="fa fa-shopping-cart"></i> Returns
+                </button>
+                <button class="btn btn-action btn-changeout">
+                    <i class="fa fa-refresh"></i> Internal Changeout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <!-- Customer Input -->
+            <div class="customer-input-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>Customer</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search customer...">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button"><i class="fa fa-user"></i></button>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label>Scan/Enter Item</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Scan or enter item...">
+                            <span class="input-group-btn">
+                                <button class="btn btn-success" type="button">
+                                    <i class="fa fa-shopping-cart"></i> Add to ticket
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Section -->
+            <div class="ticket-section">
+                <div class="ticket-header">TICKET</div>
+                
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-6">
+                        <label>Commission</label>
+                        <select class="form-control">
+                            <option>Select Person</option>
+                        </select>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" checked> Item level
+                        </label>
+                    </div>
+                    <div class="col-md-6">
+                        <label>Delivery</label>
+                        <select class="form-control">
+                            <option>Select</option>
+                        </select>
+                        <label class="checkbox-inline">
+                            <input type="checkbox"> Item level
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Item List -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ITEM</th>
+                            <th>MEMBER</th>
+                            <th>QTY</th>
+                            <th>PRICE</th>
+                            <th>DISCOUNT</th>
+                            <th>TAX</th>
+                            <th>TOTAL</th>
+                            <th>DELETE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="item-row">
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="https://via.placeholder.com/60x60/ff9800/ffffff?text=GUN" class="item-image" alt="Item">
+                                    <div>
+                                        <div><strong>Product</strong> WGUN 345345435534 XPR SCP COMBO 7MM REM</div>
+                                        <button class="btn btn-xs btn-link" style="padding: 0;">+ Related Items</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-control">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control" value="1" min="1" style="width: 60px;">
+                            </td>
+                            <td>
+                                $500.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>
+                                $21.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>$0.00</td>
+                            <td><strong>$458.00</strong></td>
+                            <td><i class="fa fa-trash text-danger"></i></td>
+                        </tr>
+                        <tr class="item-row">
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="https://via.placeholder.com/60x60/2196f3/ffffff?text=INS" class="item-image" alt="Item">
+                                    <div>
+                                        <div><strong>Product</strong> PRIVATE INSTRUCTION: YOU & YOUR GUN ($125 Extern-ally Purchesed Firearm)</div>
+                                        <button class="btn btn-xs btn-link" style="padding: 0;">+ Related Items</button>
+                                        <button class="btn btn-xs btn-default">Addd-on</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-control">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                                <select class="form-control" style="margin-top: 5px;">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                                <select class="form-control" style="margin-top: 5px;">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control" value="1" min="1" style="width: 60px;">
+                            </td>
+                            <td>
+                                $500.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>
+                                $21.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>$0.00</td>
+                            <td><strong>$458.00</strong></td>
+                            <td><i class="fa fa-trash text-danger"></i></td>
+                        </tr>
+                        <tr class="item-row">
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="https://via.placeholder.com/60x60/2196f3/ffffff?text=INS" class="item-image" alt="Item">
+                                    <div>
+                                        <div><strong>Product</strong> PRIVATE INSTRUCTION: YOU & YOUR GUN ($125 Extern-ally Purchesed Firearm)</div>
+                                        <button class="btn btn-xs btn-link" style="padding: 0;">+ Related Items</button>
+                                        <button class="btn btn-xs btn-default">Addd-on</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-control">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                                <select class="form-control" style="margin-top: 5px;">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                                <select class="form-control" style="margin-top: 5px;">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control" value="1" min="1" style="width: 60px;">
+                            </td>
+                            <td>
+                                $500.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>
+                                $21.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>$0.00</td>
+                            <td><strong>$458.00</strong></td>
+                            <td><i class="fa fa-trash text-danger"></i></td>
+                        </tr>
+                        <tr class="item-row">
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="https://via.placeholder.com/60x60/ff9800/ffffff?text=GUN" class="item-image" alt="Item">
+                                    <div>
+                                        <div><strong>Product</strong> WGUN 345345435534 XPR SCP COMBO 7MM REM</div>
+                                        <button class="btn btn-xs btn-link" style="padding: 0;">+ Related Items</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <select class="form-control">
+                                    <option>Ravi kumar san</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control" value="1" min="1" style="width: 60px;">
+                            </td>
+                            <td>
+                                $500.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>
+                                $21.00 <i class="fa fa-edit"></i>
+                            </td>
+                            <td>$0.00</td>
+                            <td><strong>$458.00</strong></td>
+                            <td><i class="fa fa-trash text-danger"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Promotion Codes -->
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Promotion Code:">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button">APPLY</button>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Referral Code:">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button">APPLY</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn" style="background-color: #e91e63; color: #fff;">
+                        <i class="fa fa-lock"></i> CUSTOM DISCOUNT
+                    </button>
+                </div>
+
+                <!-- Address and Total Section -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-6">
+                        <div class="address-section">
+                            <div><strong>Shipping:</strong> Standard</div>
+                            <div><strong>Shipping Price::</strong> $10</div>
+                            <label class="checkbox-inline">
+                                <input type="checkbox"> Discount Shipping Charges
+                            </label>
+                            <div style="margin-top: 10px;">
+                                <div><strong>Address Type:</strong> Home</div>
+                                <div><strong>Address:</strong> Baghhh ameer sumithra nagar colony, hyderabad, telangana, india 200071</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="total-section">
+                            <div class="row">
+                                <div class="col-md-6 text-right">Total Shipping:</div>
+                                <div class="col-md-6 text-right">$712.16</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 text-right">Tip:</div>
+                                <div class="col-md-6 text-right">$1.00</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 text-right">Total Discount:</div>
+                                <div class="col-md-6 text-right text-danger">$7.75</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 text-right">Sales Tax:</div>
+                                <div class="col-md-6 text-right">$730.91</div>
+                            </div>
+                            <label class="checkbox-inline">
+                                <input type="checkbox"> Exempt Tax
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6 text-right">CFET Tax:</div>
+                                <div class="col-md-6 text-right">$0</div>
+                            </div>
+                            <label class="checkbox-inline">
+                                <input type="checkbox"> FET Exempt LEO / Retrired LEO
+                            </label>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6 text-right"><strong>Amount Payable:</strong></div>
+                                <div class="col-md-6 text-right amount-payable">$485.25</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proceed to Pay Button -->
+                <button class="btn btn-proceed">Proceed to Pay</button>
+            </div>
+        </div>
+
+        <!-- Right Panel - Customer Profile -->
+        <div class="right-panel">
+            <img src="https://via.placeholder.com/100x100/2196f3/ffffff?text=EJW" class="profile-img" alt="Customer">
+            <h4 style="text-align: center;">Eric J. Weber</h4>
+            
+            <div style="margin-top: 20px; font-size: 13px;">
+                <div><i class="fa fa-clock-o"></i> Last activity: July 22, 2021</div>
+                <div><i class="fa fa-phone"></i> Mobile Phone: 504-391-8929</div>
+                <div><i class="fa fa-envelope"></i> Email: ericweber@proton.com</div>
+                <div><i class="fa fa-map-marker"></i> Address: 198 W 18th Ave, Vancouver, British Columbia, 185235</div>
+                <button class="btn btn-default btn-sm" style="width: 100%; margin-top: 10px;">Recent activity</button>
+            </div>
+
+            <div class="subscription-badge">
+                <strong>Bizzflo Business Plus Monthly Subscription Member ACTIVE</strong>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-payment btn-advanced">Advanced Payment: $50.00</button>
+                <button class="btn btn-payment btn-credit">In-Store Credit: $50.00</button>
+                <button class="btn btn-payment btn-voucher">discount voucher: $9.00</button>
+                <button class="btn btn-payment btn-outstanding">Outstanding: $9.00</button>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="row">
+                    <div class="col-md-6"><strong>Name</strong></div>
+                    <div class="col-md-6"><strong>Logo</strong></div>
+                </div>
+            </div>
+            <div class="transaction-icons">
+                <div class="icon-box">
+                    <i class="fa fa-refresh"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Special orders</div>
+                </div>
+                <div class="icon-box active">
+                    <i class="fa fa-bus"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Layaway of standard cont..</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-arrow-right"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Consignment</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-calendar"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Special orders</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-bus"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Layaway</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-clock-o"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Consignment</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-phone"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Special orders</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-wifi"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Layaway</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-calculator"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Consignment</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-times"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Special orders</div>
+                </div>
+                <div class="icon-box">
+                    <i class="fa fa-bolt"></i>
+                    <div style="font-size: 10px; margin-top: 5px;">Layaway</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -249,35 +249,11 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, ser
         console.log(`▶ Resuming migration from appointment.id > ${lastId}`);
   console.log('Starting appointment migration with range and rental data...');
   
-  // Create ClickHouse table
-  // await createClickHouseTable(clickhouseClient);
-  
-  // Build WHERE clause for filtering
-  let whereConditions = ['1=1'];
-  const params = [];
-  
-  if (CONFIG.serviceProviderId) {
-    whereConditions.push('serviceProviderId = ?');
-    params.push(serviceProviderId);
-  }
-  
-  if (CONFIG.dateFrom) {
-    whereConditions.push('date >= ?');
-    params.push(CONFIG.dateFrom);
-  }
-  
-  if (CONFIG.dateTo) {
-    whereConditions.push('date <= ?');
-    params.push(CONFIG.dateTo);
-  }
-  
-  const whereClause = whereConditions.join(' AND ');
-  
-  // Get total count
+  // Get total count with parameterized query - NO ID filtering
   const [countResult] = await mysqlConnection.execute(
     `SELECT COUNT(*) as total FROM appointment a inner join rangeTicket r on r.appointmentId = a.id WHERE a.serviceProviderId=${serviceProviderId} and a.id > ${lastId}`  );
   const totalRecords = countResult[0].total;
-  console.log(`Total records to migrate: ${totalRecords}`);
+  console.log(`📊 Total records to migrate: ${totalRecords}`);
   
   if (totalRecords === 0) {
     console.log('No records found to migrate.');
@@ -286,6 +262,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, ser
   
   let offset = 0;
   let migratedCount = 0;
+  let lastProcessedId = 0;
   
   const bookingMap = {
     1: 'online',
@@ -489,7 +466,7 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, ser
       const customerMember = customerMemberMap[appt.customerMemberId] || {};
       const package_ = packageMap[appt.packageId] || {};
       const addon = addonMap[appt.addonId] || {};
-         lastId = appt.id;
+      
       return {
         // Appointment fields
         id: appt.id,
@@ -623,6 +600,9 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, ser
         hasAmmo: (rangeTicket.ammoItems || '').length > 0 ? 1 : 0
       };
     });
+     lastId = Math.max(...appointments.map(a => a.id));
+    // Track the highest ID in this batch
+    lastProcessedId = Math.max(...appointments.map(a => a.id));
     
     console.log(`Transformed ${transformedData.length} records`);
     
@@ -660,31 +640,27 @@ export async function migrateAppointments(mysqlConnection, clickhouseClient, ser
         }
       }
       
-      console.log(`Batch complete. Total migrated so far: ${migratedCount}/${totalRecords}`);
+      console.log(`✔ Batch complete. Processed up to ID: ${lastProcessedId}, Total so far: ${migratedCount}/${totalRecords}`);
     }
     
-    offset += batchSize;
+    offset += appointments.length; // Increment by actual rows fetched
   }
-  if(totalRecords ===migratedCount){
-     await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId, totalRecords);
+  
+  // Update migration progress ONCE at the end
+  if (totalRecords > 0 && migratedCount > 0) {
+    await updateLastMigratedId(clickhouseClient, TABLE_KEY, lastId, totalRecords);
   console.log(`✔ Migrated up to ID: ${lastId}`);
    console.log(`\n✓ Migration completed successfully!`);
-  } else {
- console.log(`\n✓few migrations are missing!`);
+
   }
- 
   
- 
-  console.log(`Total records migrated: ${migratedCount}`);
+  if (totalRecords === migratedCount) {
+    console.log(`\n✅ Migration completed successfully!`);
+  } else {
+    console.log(`\n⚠️ Migration incomplete: Expected ${totalRecords}, Migrated ${migratedCount}`);
+  }
   
-  // Verify data in ClickHouse
-  const result = await clickhouseClient.query({
-    query: 'SELECT count() as total FROM Range_appointments',
-    format: 'JSONEachRow'
-  });
-  
-  const rows = await result.json();
-  console.log(`\nVerification: ${rows[0].total} records in ClickHouse table`);
+  console.log(`📊 Total records migrated: ${migratedCount}`);
 }
 
 function getApprovalStatus(approval) {

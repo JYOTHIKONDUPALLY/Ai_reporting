@@ -437,7 +437,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
       const processedData = [];
   for (const row of rows) {
     try{
-    lastId = row.id;
+    
           // Get serial numbers
           const serialNumbers = await getSerialNumbers(mysqlConn, row.id);
     const stats = await getProductStats(mysqlConn, row.id, serviceProviderId);
@@ -497,6 +497,7 @@ async function migrateProductInventory(mysqlConn, clickhouse, serviceProviderId,
           errors.push({ productId: row.id, error: rowError.message });
         }
       }
+      lastId = Math.max(...rows.map(r => r.id));
 
       console.log(`  📥 Prepared ${processedData.length} rows for ClickHouse insert`);
 

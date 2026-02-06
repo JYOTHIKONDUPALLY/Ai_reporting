@@ -132,7 +132,7 @@
         <!-- Dashboard Content -->
         <div class="max-w-7xl mx-auto px-6 py-6">
             <div class="mb-6">
-                <p class="text-gray-600">Monthly revenue breakdown by category for {{ $currentYear }}</p>
+                <p class="text-gray-600">Monthly revenue breakdown by category for the last 12 months</p>
             </div>
 
             <!-- Helper function to format currency -->
@@ -158,9 +158,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($monthlyData as $month => $data)
+                            @foreach($monthlyData as $monthKey => $data)
                             <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">{{ $month }}</td>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">{{ $data['month_abbr'] ?? $monthKey }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-700 text-right border-r border-gray-200">{{ formatCurrency($data['memberships']) }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-700 text-right border-r border-gray-200">{{ formatCurrency($data['products']) }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-700 text-right border-r border-gray-200">{{ formatCurrency($data['services']) }}</td>

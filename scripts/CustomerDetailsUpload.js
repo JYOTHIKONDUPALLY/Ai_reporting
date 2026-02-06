@@ -101,78 +101,40 @@ async function createInvoiceTable(clickhouse, tableName) {
   const createQuery = `
     CREATE TABLE IF NOT EXISTS ${tableName}
     (
-         -- Primary Keys
-    session_id UInt32,
-    class_id UInt32,
-    enrollment_id UInt32,
-    enrollment_session_id UInt32,
-    customer_id UInt32,
-    invoice_id UInt32,
-    
-    -- Service Provider & Location
-    service_provider_id UInt32,
-    location_id UInt32,
-    location_name String,
-    
-    -- Class Information
-    class_name String,
-    class_type_id UInt32,
-    class_type_name String,
-    class_category_id UInt32,
-    class_category_name String,
-    class_capacity UInt16,
-    class_status String,  -- 0=Inactive, 1=Active
-    class_enrollment_status String,  -- 1=Enrollment Open, 2=Do Not Publish, 3=Enrollment Closed
-    
-    -- Session Information
-    session_name String,
-    session_date Date,
-    session_start_time String,
-    session_end_time String,
-    session_duration String,
-    session_status String,  -- 1=Active, 0=Cancelled
-    is_parent_session UInt8,
-    
-    -- Instructor/Resource Information
-    resource_id UInt32,
-    resource_name String,
-    additional_resource_ids String,
-    
-    -- Customer/Member Information (Simplified)
-    customer_member_id UInt32,
-    member_name String,
-    customer_name String,  -- Combined first + last name
-    
-    -- Enrollment Details
-    enrollment_status String,  -- 0=Deleted, 1=Enrolled, 3=Waiting List
-    enrollment_quantity UInt16,
-    enrollment_creation_date DateTime,
-    booking_method String,  -- 1=Online, 2=PhoneIn, 3=WalkIn
-    payment_status UInt8,
-    payment_type_id UInt32,
-    is_checked_in UInt8,
-    
-    -- Financial Information (from invoice_items_detail)
-    item_price Decimal(10, 2),
-    quantity UInt16,
-    total_price Decimal(10, 2),
-    sale_discount Decimal(10, 2),
-    discount_amount Decimal(10, 2),
-    tax_amount Decimal(10, 2),
-    net_amount Decimal(10, 2),  -- total_price - sale_discount
-    
-    -- Promotion Information
-    promotion_id UInt32,
-    promotion_name String,
-    
-    -- Timestamps
-    invoice_created_at DateTime,
-    created_at DateTime DEFAULT now(),
-    updated_at DateTime DEFAULT now()
-) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(session_date)
-ORDER BY (service_provider_id, session_date, class_id, session_id)
-SETTINGS index_granularity = 8192;
+      
+    id UInt32,
+franchise_id UInt32,
+franchise String,
+provider_id UInt32,
+provider String,
+    CustomerName String,
+    FirstName String,
+    MiddleName String,
+    LastName String,
+    Email String,
+    Phone String,
+    Mobile String,
+    DateOfBirth Date,
+    Gender String,
+    IsMember String,
+    MemberId String,
+    Status String,
+    Acquisition String,
+    Address String,
+    City String,
+    State String,
+    Country String,
+    Zipcode String,
+    Unsubscribed String,
+    Tag String,
+     LoyaltyPoints Decimal(18, 2),
+    Referral String,
+    created_at DateTime,
+    updated_at DateTime,
+    deleted_at Nullable(DateTime)
+)
+ENGINE = MergeTree()
+ORDER BY Email
   `;
 
   await clickhouse.exec({ query: createQuery });
@@ -191,8 +153,8 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
             SELECT count(*) as count FROM customer c
             INNER JOIN serviceProviderCustomerDetails scd 
                 ON scd.customerId = c.id 
-            WHERE scd.serviceProviderId = ? and c.id > ?
-        `, [serviceProviderId, lastId]);
+            WHERE scd.serviceProviderId = ${serviceProviderId} and c.id > ${lastId}
+        `);
     const totalRecords = count[0].count;
     console.log(`📊 Total records to migrate: ${totalRecords}`);
 
@@ -207,9 +169,10 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
             FROM customer c
             INNER JOIN serviceProviderCustomerDetails scd 
                 ON scd.customerId = c.id 
-            WHERE scd.serviceProviderId = ? and c.id > ?
-            LIMIT ? 
-        `, [serviceProviderId,lastId, batchSize]);
+            WHERE scd.serviceProviderId = ${serviceProviderId} and c.id > ${lastId}
+            Order by c.id asc
+            LIMIT ${batchSize} 
+        `);
 
         if (rows.length === 0) {
             console.log("🎉 All customers fully migrated.");
@@ -217,9 +180,9 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
         }
 
         const batchValues = [];
-
+    lastId = Math.max(...rows.map(r => r.id));
         for (const row of rows) {
-            lastId = row.id;
+         
             const serviceProviderId = CONFIG.serviceProviderId;
 
             const [serviceProviderName] = await mysqlConn.query(
@@ -301,9 +264,10 @@ async function migrateCustomers(mysqlConn, clickhouse, serviceProviderId, batchS
         });
 
         totalInserted += batchValues.length;
-        offset += batchSize;
+        offset += rows.length;
+        console.log(`✔ Batch complete. Total so far: ${totalInserted}/${totalRecords}`)
     }
-    if(totalRecords >0 && totalInserted == totalRecords){
+    if(totalRecords >0 && totalInserted >0){
            await updateLastMigratedId(clickhouse, TABLE_KEY, lastId, totalRecords);
 console.log(`✔ Migrated up to ID: ${lastId}`);
     console.log(`✅ TOTAL INSERTED INTO CLICKHOUSE: ${totalInserted}`); 

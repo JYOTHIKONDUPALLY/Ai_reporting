@@ -26,6 +26,21 @@ class DashboardController extends Controller
             $dashboards = [];
         }
         
+        // Add financial dashboards at the beginning of the list
+        $financialDashboards = [
+            [
+                'type' => 'financial',
+                'title' => 'Financial Dashboard',
+                'description' => 'Financial Card View with revenue breakdowns'
+            ],
+            [
+                'type' => 'financial-table',
+                'title' => 'Financial Table',
+                'description' => 'Financial Table View with monthly breakdowns'
+            ]
+        ];
+        $dashboards = array_merge($financialDashboards, $dashboards);
+        
         return view('dashboards.index', [
             'dashboards' => $dashboards
         ]);
@@ -325,9 +340,9 @@ class DashboardController extends Controller
     public function financialTable()
     {
         $clickhouse = app(\App\Services\ClickhouseService::class);
-        $currentYear = date('Y');
-        $yearStart = date('Y-01-01');
-        $yearEnd = date('Y-12-31');
+        // Get last 12 months instead of current year
+        $endDate = date('Y-m-d');
+        $startDate = date('Y-m-01', strtotime('-11 months')); // Start from 12 months ago, beginning of that month
 
         // Saleable item types filter
         $saleableFilter = "(lowerUTF8(iid.item_type) IN ('product', 'service', 'class', 'membership', 'package', 'rental', 'giftcard', 'appointment', 'subscription') OR lowerUTF8(iid.item_type) LIKE 'misc%' OR lowerUTF8(iid.item_type) LIKE 'Misc%')";
@@ -348,7 +363,7 @@ class DashboardController extends Controller
                 SUM(iid.total_price) AS revenue
             FROM invoice_items_detail AS iid
             INNER JOIN invoice_details AS idt ON iid.invoice_id = idt.id
-            WHERE idt.invoice_date BETWEEN toDate('{$yearStart}') AND toDate('{$yearEnd}')
+            WHERE idt.invoice_date >= toDate('{$startDate}') AND idt.invoice_date <= toDate('{$endDate}')
                 AND idt.status = '1'
                 AND {$saleableFilter}
             GROUP BY month_start, month_abbr, revenue_type
@@ -357,12 +372,15 @@ class DashboardController extends Controller
 
         $results = $clickhouse->select($sql);
 
-        // Initialize monthly data structure
+        // Initialize monthly data structure for last 12 months
         $monthlyData = [];
-        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        foreach ($months as $month) {
-            $monthlyData[$month] = [
+        // Generate last 12 months dynamically
+        for ($i = 11; $i >= 0; $i--) {
+            $monthDate = date('Y-m-01', strtotime("-$i months"));
+            $monthAbbr = date('M', strtotime($monthDate));
+            $monthKey = date('Y-m', strtotime($monthDate)); // Use YYYY-MM as key to handle year boundaries
+            $monthlyData[$monthKey] = [
+                'month_abbr' => $monthAbbr,
                 'memberships' => 0,
                 'products' => 0,
                 'services' => 0,
@@ -374,13 +392,17 @@ class DashboardController extends Controller
 
         // Populate monthly data
         foreach ($results as $row) {
-            $month = $row['month_abbr'] ?? '';
+            $monthStart = $row['month_start'] ?? '';
             $type = $row['revenue_type'] ?? 'other';
             $revenue = (float)($row['revenue'] ?? 0);
             
-            if (isset($monthlyData[$month]) && isset($monthlyData[$month][$type])) {
-                $monthlyData[$month][$type] = $revenue;
-                $monthlyData[$month]['total'] += $revenue;
+            // Convert month_start (Date) to YYYY-MM format for matching
+            if ($monthStart) {
+                $monthKey = date('Y-m', strtotime($monthStart));
+                if (isset($monthlyData[$monthKey]) && isset($monthlyData[$monthKey][$type])) {
+                    $monthlyData[$monthKey][$type] = $revenue;
+                    $monthlyData[$monthKey]['total'] += $revenue;
+                }
             }
         }
 
@@ -428,7 +450,9 @@ class DashboardController extends Controller
         return view('dashboards.financial-table', [
             'monthlyData' => $monthlyData,
             'columnTotals' => $columnTotals,
-            'currentYear' => $currentYear,
+            'period' => 'last_12_months',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'allDashboards' => $allDashboards
         ]);
     }

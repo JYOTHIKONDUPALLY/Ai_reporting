@@ -107,10 +107,10 @@ CRITICAL RULES:
 
 5a. Invoice Status Filtering:
    - invoice_details.status stores numeric values as String: '1' = Active, '0' = Inactive
-   - For active invoices: idt.status = '1' (NOT 'Active' or 'active')
-   - For inactive invoices: idt.status = '0'
-   - When filtering for active invoices, always use: idt.status = '1'
-   - Example: WHERE idt.status = '1' AND idt.invoice_date >= ...
+   - For active invoices: idt.status = 'active' (NOT 'Active' or 'active')
+   - For inactive invoices: idt.status = 'inactive'
+   - When filtering for active invoices, always use: idt.status = 'active'
+   - Example: WHERE idt.status = 'active' AND idt.invoice_date >= ...
 
 6. Aggregations:
    - "total X sold" → SUM(iid.quantity) AS units_sold
@@ -152,9 +152,9 @@ CRITICAL RULES:
    - DISTINCT vs GROUP BY: Use DISTINCT for simple deduplication, GROUP BY for aggregations
    - Net sales calculation: SUM(iid.total_price) - SUM(iid.refund_amount) AS net_sales
    - Active records: 
-     * invoice_details.status: Use idt.status = '1' for active (NOT 'Active')
-     * memberships.is_active: Use m.is_active = 1 for active
-     * class_sessions.class_status: Use cs.class_status = '1' for active
+     * invoice_details.status: Use idt.status = 'active' for active (NOT 'Active')
+     * memberships.is_active: Use m.is_active = active for active
+     * class_sessions.class_status: Use cs.class_status = 'active' for active
 
 9. Column Selection (DEFAULT: Human-Readable Reports):
    - ALWAYS prefer name columns over ID columns in SELECT statements for human-readable output

@@ -6,6 +6,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Financial Dashboard - BizzAI Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    boxShadow: {
+                        'soft': '0 10px 30px rgba(2, 6, 23, .06)'
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -31,6 +51,17 @@
         .border-brand-primary {
             border-color: var(--brand-primary);
         }
+        
+        .scroll-smooth::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .scroll-smooth::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, .15);
+            border-radius: 999px;
+        }
+        
         .dashboard-tab {
             transition: all 0.2s ease;
             position: relative;
@@ -54,7 +85,7 @@
         }
         
         .revenue-card {
-            border-radius: 8px;
+            border-radius: 0.75rem;
             padding: 20px 18px;
             display: flex;
             flex-direction: column;
@@ -62,7 +93,7 @@
             text-align: left;
             min-height: 140px;
             height: 100%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
@@ -149,12 +180,12 @@
         }
         
         .total-revenue-card {
-            background-color: #f45b5b;
-            border-radius: 8px;
+            background: linear-gradient(50deg, #d86bea 0%, #763881 80%);
+            border-radius: 0.75rem;
             padding: 20px;
             min-height: 100%;
             height: 100%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
             box-sizing: border-box;
             width: 100%;
             display: flex;
@@ -176,41 +207,45 @@
         }
         
         .section-bg-light {
-            background-color: #f5f5f5;
-            border: 1px solid #d0d0d0;
+            background-color: white;
+            border: none;
         }
         
         .section-bg-dark {
-            background-color: #424242;
-            border: 1px solid #2d2d2d;
+            background-color: white;
+            border: none;
         }
         
         .section-header {
-            background-color: #e0e0e0;
-            padding: 12px 16px;
+            background: var(--brand-primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             margin: -24px -24px 16px -24px;
-            border-radius: 6px 6px 0 0;
-            border-bottom: 1px solid #d0d0d0;
+            border-radius: 8px 8px 0 0;
         }
         
         .section-bg-dark .section-header {
-            background-color: #2d2d2d;
-            border-bottom: 0px solid #1a1a1a;
+            background: var(--brand-primary);
+            border-bottom: none;
         }
         
         .section-title {
-            font-size: 16px;
+            font-size: 0.875rem;
             font-weight: 600;
             margin-bottom: 0;
-            text-align: center;
+            text-align: left;
         }
         
         .section-bg-light .section-title {
-            color: #333;
+            color: white;
         }
         
         .section-bg-dark .section-title {
-            color: #fff;
+            color: white;
         }
         
         .revenue-grid {
@@ -262,7 +297,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 text-slate-800">
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
         <div class="max-w-7xl mx-auto px-6 py-4">
@@ -272,7 +307,7 @@
                     <div class="w-10 h-10 rounded-xl grid place-items-center">
                         <img alt="Logo" class="w-6 h-6" src="https://88tactical.com/wp-content/uploads/2022/07/88-tactical-logo-vert-236x300.png">
                     </div>
-                    <a href="/dashboards" class="font-semibold">
+                    <a href="{{ route('dashboards.index') }}" class="font-semibold">
                         <h1>
                             <span style="color:#000; font-weight:bold;font-size:120%;">88 Tactical</span>
                             <span style="color:#A71930; font-weight:bold;font-size:120%;">AI</span>
@@ -305,26 +340,24 @@
     </header>
 
     <div class="min-h-screen">
-        <!-- Dashboard Tabs Section -->
-        <div class="bg-white border-b border-gray-200 sticky top-[73px] z-10 shadow-sm">
-            <div class="max-w-7xl mx-auto">
-                <!-- Top Bar -->
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between flex-wrap gap-4">
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
-                        </div>
+        <!-- Dashboard Content -->
+        <div class="max-w-7xl mx-auto px-4 md:px-6 py-6">
+            <!-- Dashboard Title and Tabs -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
+                        <p class="text-gray-600 text-sm mt-1">Revenue breakdown by type and time period</p>
                     </div>
                 </div>
                 
                 <!-- Horizontal Tabs Menu -->
-                <div class="px-6">
-                    <nav class="flex space-x-1 overflow-x-auto" aria-label="Dashboard Tabs">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <nav class="flex space-x-1 overflow-x-auto px-4" aria-label="Dashboard Tabs">
                         @foreach($allDashboards ?? [] as $dash)
                             @if(isset($dash['route']))
                                 <a href="{{ route($dash['route']) }}"
-                                   class="dashboard-tab px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors {{ 'financial' === $dash['type'] ? '' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300' }}"
-                                   style="{{ 'financial' === $dash['type'] ? 'border-color: #A71930; color: #A71930;' : '' }}">
+                                   class="dashboard-tab px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors {{ 'financial' === $dash['type'] ? 'border-brand-primary brand-primary' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300' }}">
                                     {{ $dash['title'] }}
                                 </a>
                             @else
@@ -336,13 +369,6 @@
                         @endforeach
                     </nav>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Dashboard Content -->
-        <div class="max-w-7xl mx-auto px-6 py-6">
-            <div class="mb-6">
-                <p class="text-gray-600">Revenue breakdown by type and time period</p>
             </div>
 
             <!-- Helper function to format currency -->
@@ -472,7 +498,7 @@
             <!-- Revenue Sections -->
             <div class="space-y-6">
                 @foreach($sections as $index => $section)
-                <div class="{{ $section['bgClass'] }} rounded-lg p-6">
+                <div class="{{ $section['bgClass'] }} rounded-2xl ring-1 ring-slate-200 shadow-soft p-6">
                     <!-- Section Header -->
                     <div class="section-header">
                         <h2 class="section-title">{{ $section['title'] }}</h2>

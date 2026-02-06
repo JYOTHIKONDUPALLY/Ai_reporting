@@ -107,12 +107,30 @@ class DashboardService
                 $data = $this->processPieChartData($data, $widget['config'] ?? []);
             }
             
+            // If metric widget has chart config, execute chart query
+            $chartData = null;
+            if (($widget['type'] ?? '') === 'metric' && isset($widget['config']['chart'])) {
+                $chartConfig = $widget['config']['chart'];
+                if (isset($chartConfig['sql'])) {
+                    $chartSql = $chartConfig['sql'];
+                    // Apply filters to chart SQL
+                    $chartSql = $this->applyFilters($chartSql, $filters);
+                    // Execute chart query
+                    $chartData = $this->executeWidgetQuery($chartSql, []);
+                    // Process pie chart data if needed
+                    if (($chartConfig['type'] ?? '') === 'pie' && !empty($chartData)) {
+                        $chartData = $this->processPieChartData($chartData, $chartConfig);
+                    }
+                }
+            }
+            
             $widgets[] = [
                 'id' => $widget['id'] ?? uniqid(),
                 'title' => $widget['title'] ?? 'Untitled',
                 'type' => $widget['type'] ?? 'table',
                 'config' => $widget['config'] ?? [],
                 'data' => $data,
+                'chartData' => $chartData,
                 'sql' => $sql
             ];
         }

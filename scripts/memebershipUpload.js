@@ -326,6 +326,7 @@ async function migrateMembership(mysqlConn, clickhouse,serviceProviderId, batchS
         latestInvoiceMap[inv.subscriptionId] = inv;
       }
     });
+    lastId = Math.max(...enrollments.map(r => r.id));
 
     // Transform data
     const cleanedRows = enrollments.map(me => {
@@ -395,7 +396,7 @@ async function migrateMembership(mysqlConn, clickhouse,serviceProviderId, batchS
       
       const cancellationDate = subscription.cancellationDate ? new Date(subscription.cancellationDate) : null;
       const daysSinceCancellation = cancellationDate ? Math.floor((currentDate - cancellationDate) / (1000 * 60 * 60 * 24)) : null;
-lastId = me.id;
+
       return {
         // Primary Keys & IDs
         enrollment_id: me.id,

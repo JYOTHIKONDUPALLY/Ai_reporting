@@ -223,7 +223,7 @@ async function migrateInvoices(mysqlConn, clickhouse, serviceProviderId, batchSi
 
       // 🔹 Build processed data
       const processedData = rows.map(row => {
-        lastId = row.id;
+        lastId = Math.max(...rows.map(r => r.id));
         return{
         id: row.id,
         franchise_id,

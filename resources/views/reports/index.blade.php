@@ -895,21 +895,29 @@ LIMIT 1;`
       }
   ,
       range_busiest_dow: ({
-  audience,
-  start,
-  end
-}) => {
-  let dateFilter = '';
-  if (start && end) {
-    dateFilter = `AND o.invoice_date >= toDate('${start}') AND o.invoice_date <= toDate('${end}')`;
-  } else {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const defaultStart = `${currentYear}-01-01`;
-    const defaultEnd = now.toISOString().split('T')[0];
-    dateFilter = `AND o.invoice_date >= toDate('${defaultStart}') AND o.invoice_date <= toDate('${defaultEnd}')`;
-  }
-  return `/* Busiest day of week (avg last 12 months) */
+        audience,
+        start,
+        end
+      }) => {
+        let dateFilter = '';
+        if (start && end) {
+          // Get dates from 12 months ago
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+          startDate.setMonth(startDate.getMonth() - 12);
+          endDate.setMonth(endDate.getMonth() - 12);
+          const start12MonthsAgo = startDate.toISOString().split('T')[0];
+          const end12MonthsAgo = endDate.toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
+        } else {
+          const defaultEnd = new Date();
+          const defaultStart = new Date();
+          defaultStart.setMonth(defaultStart.getMonth() - 12);
+          const start12MonthsAgo = defaultStart.toISOString().split('T')[0];
+          const end12MonthsAgo = defaultEnd.toISOString().split('T')[0];
+          dateFilter = `AND o.invoice_date >= toDate('${start12MonthsAgo}') AND o.invoice_date <= toDate('${end12MonthsAgo}')`;
+        }
+        return `/* Busiest day of week (avg last 12 months) */
 SELECT toDayOfWeek(o.invoice_date) AS dow,
     arrayElement(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], dow) AS day_name,
     round(countDistinct(o.customer_id) / countDistinct(toDate(o.invoice_date))) AS avg_customers
@@ -920,7 +928,7 @@ WHERE oi.item_type='service' AND oi.category='Gun Ranges & Instruction'
   ${audience==='members' ? 'AND o.is_member=1' : audience==='non_members' ? 'AND o.is_member=0' : ''}
 GROUP BY dow
 ORDER BY avg_customers DESC`
-},
+      },
       cls_popular: ({
         start,
         end,

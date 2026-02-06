@@ -160,7 +160,7 @@ let offset = 0;
 
       const data = [];
       for (const r of rows) {
-        lastId = r.id;
+       
         // Provider name
         let providerName = "Other";
         let locationId =0;
@@ -235,6 +235,7 @@ let offset = 0;
           updated_at: formatDate(r.updatedAt || new Date()),
         });
       }
+      lastId = Math.max(...rows.map(r => r.id));
 
       if (data.length > 0) {
         await clickhouse.insert({

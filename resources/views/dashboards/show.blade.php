@@ -200,38 +200,47 @@
                         @if(isset($widget['error']))
                         <div class="text-sm brand-primary">{{ $widget['error'] }}</div>
                         @elseif($widget['type'] === 'metric')
-                        <div class="grid grid-cols-{{ count($widget['config']['metrics'] ?? []) }} gap-4">
-                            @foreach($widget['config']['metrics'] ?? [] as $metric)
-                            @php
-                                $value = $widget['data'][0][$metric['field']] ?? 0;
-                                $rawValue = $value;
-                                if($metric['format'] === 'currency') {
-                                    if($value >= 1000000) {
-                                        $formatted = number_format($value / 1000000, 1);
-                                        $value = '$' . rtrim(rtrim($formatted, '0'), '.') . 'M';
-                                    } elseif($value >= 1000) {
-                                        $formatted = number_format($value / 1000, 1);
-                                        $value = '$' . rtrim(rtrim($formatted, '0'), '.') . 'K';
-                                    } else {
-                                        $value = '$' . number_format($value, 2);
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-{{ count($widget['config']['metrics'] ?? []) }} gap-4">
+                                @foreach($widget['config']['metrics'] ?? [] as $metric)
+                                @php
+                                    $value = $widget['data'][0][$metric['field']] ?? 0;
+                                    $rawValue = $value;
+                                    if($metric['format'] === 'currency') {
+                                        if($value >= 1000000) {
+                                            $formatted = number_format($value / 1000000, 1);
+                                            $value = '$' . rtrim(rtrim($formatted, '0'), '.') . 'M';
+                                        } elseif($value >= 1000) {
+                                            $formatted = number_format($value / 1000, 1);
+                                            $value = '$' . rtrim(rtrim($formatted, '0'), '.') . 'K';
+                                        } else {
+                                            $value = '$' . number_format($value, 2);
+                                        }
+                                    } elseif($metric['format'] === 'number') {
+                                        if($value >= 1000000) {
+                                            $formatted = number_format($value / 1000000, 1);
+                                            $value = rtrim(rtrim($formatted, '0'), '.') . 'M';
+                                        } elseif($value >= 1000) {
+                                            $formatted = number_format($value / 1000, 1);
+                                            $value = rtrim(rtrim($formatted, '0'), '.') . 'K';
+                                        } else {
+                                            $value = number_format($value);
+                                        }
                                     }
-                                } elseif($metric['format'] === 'number') {
-                                    if($value >= 1000000) {
-                                        $formatted = number_format($value / 1000000, 1);
-                                        $value = rtrim(rtrim($formatted, '0'), '.') . 'M';
-                                    } elseif($value >= 1000) {
-                                        $formatted = number_format($value / 1000, 1);
-                                        $value = rtrim(rtrim($formatted, '0'), '.') . 'K';
-                                    } else {
-                                        $value = number_format($value);
-                                    }
-                                }
-                            @endphp
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-gray-900">{{ $value }}</div>
-                                <div class="text-xs text-gray-600 mt-1">{{ $metric['label'] }}</div>
+                                @endphp
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-gray-900">{{ $value }}</div>
+                                    <div class="text-xs text-gray-600 mt-1">{{ $metric['label'] }}</div>
+                                </div>
+                                @endforeach
                             </div>
-                            @endforeach
+                            @if(isset($widget['config']['chart']) && isset($widget['chartData']))
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="chart-container" style="height: 250px;">
+                                    <canvas id="chart-{{ $widget['id'] }}"></canvas>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                         @elseif($widget['type'] === 'table')
                         <div class="overflow-x-auto">
@@ -337,6 +346,55 @@
     </div>
 
     <script>
+        // Render charts for metric widgets with chart data
+        @foreach($dashboard['widgets'] ?? [] as $widget)
+        @if($widget['type'] === 'metric' && isset($widget['chartData']) && !empty($widget['chartData']) && isset($widget['config']['chart']))
+        (function() {
+            const ctx = document.getElementById('chart-{{ $widget['id'] }}');
+            if (!ctx) return;
+            
+            const chartConfig = @json($widget['config']['chart']);
+            const chartData = @json($widget['chartData']);
+            const chartType = chartConfig['type'] || 'pie';
+            const labelField = chartConfig['labelField'] || Object.keys(chartData[0] || {})[0];
+            const valueField = chartConfig['valueField'] || Object.keys(chartData[0] || {})[1];
+            
+            const labels = chartData.map(row => row[labelField] || '');
+            const values = chartData.map(row => parseFloat(row[valueField] || 0));
+            
+            new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: valueField.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        data: values,
+                        backgroundColor: chartType === 'pie' ?
+                            ['#33a1df', '#4ade80', '#fbbf24', '#f87171', '#a78bfa', '#60a5fa', '#34d399', '#fb923c', '#f472b6', '#818cf8'] :
+                            '#33a1df',
+                        borderColor: '#33a1df',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: chartType !== 'pie' ? {
+                        y: {
+                            beginAtZero: true
+                        }
+                    } : {}
+                }
+            });
+        })();
+        @endif
+        @endforeach
+        
         // Render charts
         @foreach($dashboard['widgets'] ?? [] as $widget)
         @if(in_array($widget['type'], ['bar', 'line', 'pie']) && !empty($widget['data']))
